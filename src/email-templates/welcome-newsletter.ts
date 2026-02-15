@@ -222,7 +222,7 @@ export function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: stri
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://guelichweb.site/logo_couleur.png" alt="GUELICHWEB" class="logo" />
+      <img src="https://guelichweb.online/logo_couleur.png" alt="GUELICHWEB" class="logo" />
     </div>
 
     <div class="content">
@@ -264,10 +264,10 @@ export function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: stri
       </div>
 
       <div class="cta-section">
-        <a href="https://guelichweb.site/#project-form" class="cta-button">
+        <a href="https://guelichweb.online/#project-form" class="cta-button">
           ${content.ctaStart}
         </a>
-        <a href="https://guelichweb.site/#contact" class="cta-button cta-button-secondary">
+        <a href="https://guelichweb.online/#contact" class="cta-button cta-button-secondary">
           ${content.ctaQuote}
         </a>
       </div>
@@ -308,8 +308,8 @@ ${content.readyTitle}
 
 ${content.readyText.replace(/<\/?strong>/g, '')}
 
-${content.ctaStart}: https://guelichweb.site/#project-form
-${content.ctaQuote}: https://guelichweb.site/#contact
+${content.ctaStart}: https://guelichweb.online/#project-form
+${content.ctaQuote}: https://guelichweb.online/#contact
 
 ---
 
