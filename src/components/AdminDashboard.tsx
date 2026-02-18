@@ -11,6 +11,7 @@ import * as XLSX from 'xlsx';
 import { supabase, PortfolioProject, ProjectSubmission, NewsletterSubscriber, VideoPortfolio, uploadImage, deleteImage } from '../lib/supabase';
 import { Language } from '../translations';
 import { ImageUploader, MultiImageUploader } from './ImageUploader';
+import { ConfirmModal } from './ConfirmModal';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -93,6 +94,17 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
     order_index: 0, is_visible: true
   });
 
+  // Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'info' | 'success';
+    onConfirm: () => void;
+  }>({
+    isOpen: false, title: '', message: '', type: 'danger', onConfirm: () => { }
+  });
+
   useEffect(() => { fetchAll(); }, []);
 
   // Fetch current user role
@@ -167,7 +179,15 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
         if (error) throw error;
       }
       setShowModal(false); setEditingItem(null); fetchAll();
-    } catch (e: any) { alert('Erreur: ' + e.message); }
+    } catch (e: any) {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Erreur',
+        message: e.message,
+        type: 'danger',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+    }
   };
 
   const saveGraphicProject = async () => {
@@ -181,7 +201,15 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
         if (error) throw error;
       }
       setShowModal(false); setEditingItem(null); fetchAll();
-    } catch (e: any) { alert('Erreur: ' + e.message); }
+    } catch (e: any) {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Erreur',
+        message: e.message,
+        type: 'danger',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+    }
   };
 
   const saveVideo = async () => {
@@ -194,13 +222,40 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
         if (error) throw error;
       }
       setShowModal(false); setEditingItem(null); fetchAll();
-    } catch (e: any) { alert('Erreur: ' + e.message); }
+    } catch (e: any) {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Erreur',
+        message: e.message,
+        type: 'danger',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+    }
   };
 
-  const deleteItem = async (table: string, id: string) => {
-    if (!confirm(fr ? 'Supprimer cet élément ?' : 'Delete this item?')) return;
-    await supabase.from(table).delete().eq('id', id);
-    fetchAll();
+  const deleteItem = (table: string, id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: fr ? 'Confirmation' : 'Confirmation',
+      message: fr ? 'Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.' : 'Are you sure you want to delete this item? This action cannot be undone.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from(table).delete().eq('id', id);
+          if (error) throw error;
+          fetchAll();
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        } catch (e: any) {
+          setConfirmModal({
+            isOpen: true,
+            title: 'Erreur',
+            message: e.message,
+            type: 'danger',
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+          });
+        }
+      }
+    });
   };
 
   const toggleVisibility = async (table: string, item: any) => {
@@ -408,6 +463,15 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        language={language}
+      />
     </div>
   );
 }

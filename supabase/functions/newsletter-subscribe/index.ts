@@ -79,223 +79,91 @@ function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: string; htm
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${content.subject}</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #1e293b;
-      background-color: #f8fafc;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-    }
-    .header {
-      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-      padding: 40px 20px;
-      text-align: center;
-    }
-    .logo {
-      max-width: 200px;
-      height: auto;
-      margin-bottom: 20px;
-    }
-    .content {
-      padding: 40px 30px;
-    }
-    .greeting {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: #0f172a;
-    }
-    .text {
-      font-size: 16px;
-      margin-bottom: 20px;
-      color: #475569;
-    }
-    .coupon-box {
-      background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
-      border-radius: 16px;
-      padding: 30px;
-      text-align: center;
-      margin: 30px 0;
-    }
-    .coupon-label {
-      color: #fff;
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-    .coupon-code {
-      background-color: #ffffff;
-      color: #dc2626;
-      font-size: 32px;
-      font-weight: 800;
-      padding: 15px 30px;
-      border-radius: 12px;
-      display: inline-block;
-      letter-spacing: 3px;
-      margin: 10px 0;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .services-list {
-      background-color: #f1f5f9;
-      border-radius: 12px;
-      padding: 20px 30px;
-      margin: 20px 0;
-    }
-    .services-list ul {
-      list-style: none;
-      padding: 0;
-      margin: 10px 0;
-    }
-    .services-list li {
-      padding: 8px 0;
-      color: #334155;
-      font-size: 15px;
-    }
-    .services-list li:before {
-      content: "✓ ";
-      color: #10b981;
-      font-weight: bold;
-      margin-right: 10px;
-    }
-    .info-box {
-      background-color: #eff6ff;
-      border-left: 4px solid #3b82f6;
-      padding: 15px 20px;
-      margin: 20px 0;
-      border-radius: 8px;
-      font-size: 14px;
-      color: #1e40af;
-    }
-    .cta-section {
-      text-align: center;
-      margin: 40px 0;
-    }
-    .cta-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-      color: #ffffff;
-      text-decoration: none;
-      padding: 16px 32px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 16px;
-      margin: 10px;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-      transition: all 0.3s ease;
-    }
-    .cta-button:hover {
-      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
-      transform: translateY(-2px);
-    }
-    .cta-button-secondary {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-    .cta-button-secondary:hover {
-      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-    }
-    .footer {
-      background-color: #1e293b;
-      color: #cbd5e1;
-      padding: 30px;
-      text-align: center;
-      font-size: 14px;
-    }
-    .footer-privacy {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #334155;
-      font-size: 13px;
-    }
-    .divider {
-      height: 1px;
-      background: linear-gradient(to right, transparent, #cbd5e1, transparent);
-      margin: 30px 0;
-    }
+    body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #334155; background-color: #f1f5f9; }
+    .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    .header { background-color: #ffffff; padding: 32px 20px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+    .logo { max-width: 180px; height: auto; }
+    .content { padding: 40px 32px; }
+    .greeting { font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 24px; }
+    .text { font-size: 16px; color: #475569; margin-bottom: 24px; line-height: 1.7; }
+    .coupon-box { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 2px dashed #fb923c; border-radius: 16px; padding: 32px; text-align: center; margin: 32px 0; position: relative; overflow: hidden; }
+    .coupon-label { color: #9a3412; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+    .coupon-code { background-color: #ffffff; color: #ea580c; font-size: 36px; font-weight: 800; padding: 16px 32px; border-radius: 12px; display: inline-block; letter-spacing: 2px; box-shadow: 0 4px 6px rgba(234, 88, 12, 0.1); }
+    .services-list { background-color: #f8fafc; border-radius: 12px; padding: 24px; margin: 32px 0; border: 1px solid #e2e8f0; }
+    .services-title { font-weight: 600; color: #0f172a; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .services-list ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .services-list li { display: flex; align-items: center; color: #475569; font-size: 14px; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .check-icon { color: #10b981; margin-right: 8px; font-weight: bold; }
+    .cta-section { text-align: center; margin: 40px 0 20px; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); transition: all 0.3s ease; }
+    .cta-secondary { display: inline-block; margin-top: 16px; color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; }
+    .cta-secondary:hover { color: #2563eb; text-decoration: underline; }
+    .footer { background-color: #f8fafc; padding: 32px; text-align: center; font-size: 13px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+    .social-links { margin-bottom: 20px; }
+    .social-link { display: inline-block; margin: 0 8px; color: #64748b; text-decoration: none; }
     @media only screen and (max-width: 600px) {
-      .content {
-        padding: 30px 20px;
-      }
-      .coupon-code {
-        font-size: 24px;
-        padding: 12px 20px;
-      }
-      .cta-button {
-        display: block;
-        margin: 10px 0;
-      }
+      .container { margin: 0; border-radius: 0; }
+      .services-list ul { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://guelichweb.site/logo_couleur.png" alt="GUELICHWEB" class="logo" />
+      <img src="https://offre.guelichweb.online/logo_email.png" alt="GUELICHWEB" class="logo" />
     </div>
 
     <div class="content">
       <div class="greeting">${content.greeting}</div>
-
+      
       <div class="text">
         ${content.thanks}
-      </div>
-
-      <div class="text">
-        ${content.giftTitle}
       </div>
 
       <div class="coupon-box">
         <div class="coupon-label">${content.codeLabel}</div>
         <div class="coupon-code">${couponCode}</div>
+        <div style="margin-top: 16px; font-size: 13px; color: #9a3412;">
+          ${content.validity}
+        </div>
       </div>
 
       <div class="services-list">
-        <div style="font-weight: 600; margin-bottom: 10px;">${content.validOn}</div>
+        <div class="services-title">
+          <span>🎁</span> ${content.validOn}
+        </div>
         <ul>
-          ${content.services.map(service => `<li>${service}</li>`).join('')}
+          ${content.services.map(service => `<li><span class="check-icon">✓</span>${service}</li>`).join('')}
         </ul>
       </div>
 
-      <div class="info-box">
-        🕒 ${content.validity}<br>
-        📌 ${content.conditions}
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="text" style="font-size: 18px; font-weight: 600; text-align: center;">
-        ${content.readyTitle}
-      </div>
-
-      <div class="text" style="text-align: center;">
+      <div class="text" style="text-align: center; margin-top: 32px;">
         ${content.readyText}
       </div>
 
       <div class="cta-section">
-        <a href="https://guelichweb.site/#project-form" class="cta-button">
+        <a href="https://offre.guelichweb.online/#project-form" class="cta-button">
           ${content.ctaStart}
         </a>
-        <a href="https://guelichweb.site/#contact" class="cta-button cta-button-secondary">
-          ${content.ctaQuote}
+        <br>
+        <a href="https://offre.guelichweb.online/#contact" class="cta-secondary">
+          ${content.ctaQuote} →
         </a>
       </div>
     </div>
 
     <div class="footer">
-      <div>${content.closing}</div>
-      <div>${content.team}</div>
-      <div style="margin-top: 10px;">${content.tagline}</div>
-
-      <div class="footer-privacy">
+      <p style="margin-bottom: 16px; font-weight: 600; color: #475569;">${content.team}</p>
+      <p style="margin-bottom: 24px;">${content.tagline}</p>
+      
+      <div style="border-top: 1px solid #e2e8f0; margin: 24px 0;"></div>
+      
+      <p style="font-size: 12px; line-height: 1.5;">
         ${content.privacy}
-      </div>
+      </p>
+      <p style="font-size: 12px; margin-top: 12px;">
+        © ${new Date().getFullYear()} GUELICHWEB. All rights reserved.
+      </p>
     </div>
   </div>
 </body>
@@ -323,8 +191,8 @@ ${content.readyTitle}
 
 ${content.readyText.replace(/<\/?strong>/g, '')}
 
-${content.ctaStart}: https://guelichweb.site/#project-form
-${content.ctaQuote}: https://guelichweb.site/#contact
+${content.ctaStart}: https://offre.guelichweb.online/#project-form
+${content.ctaQuote}: https://offre.guelichweb.online/#contact
 
 ---
 
@@ -435,7 +303,7 @@ Deno.serve(async (req: Request) => {
         'Authorization': `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: 'GUELICHWEB <newsletter@guelichweb.site>',
+        from: 'GUELICHWEB <christ@guelichweb.online>',
         to: [email],
         subject: emailTemplate.subject,
         html: emailTemplate.html,

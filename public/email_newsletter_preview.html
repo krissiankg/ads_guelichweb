@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview: Bienvenue chez GUELICHWEB</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #334155;
+            background-color: #f1f5f9;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            background-color: #ffffff;
+            padding: 32px 20px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .logo {
+            max-width: 180px;
+            height: auto;
+        }
+
+        .content {
+            padding: 40px 32px;
+        }
+
+        .greeting {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 24px;
+        }
+
+        .text {
+            font-size: 16px;
+            color: #475569;
+            margin-bottom: 24px;
+            line-height: 1.7;
+        }
+
+        .coupon-box {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            border: 2px dashed #fb923c;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin: 32px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .coupon-label {
+            color: #9a3412;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+
+        .coupon-code {
+            background-color: #ffffff;
+            color: #ea580c;
+            font-size: 36px;
+            font-weight: 800;
+            padding: 16px 32px;
+            border-radius: 12px;
+            display: inline-block;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 6px rgba(234, 88, 12, 0.1);
+        }
+
+        .services-list {
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 32px 0;
+            border: 1px solid #e2e8f0;
+        }
+
+        .services-title {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .services-list ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .services-list li {
+            display: flex;
+            align-items: center;
+            color: #475569;
+            font-size: 14px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .check-icon {
+            color: #10b981;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        .cta-section {
+            text-align: center;
+            margin: 40px 0 20px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .cta-secondary {
+            display: inline-block;
+            margin-top: 16px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .cta-secondary:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .footer {
+            background-color: #f8fafc;
+            padding: 32px;
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .services-list ul {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <!-- Note: Using local path for preview -->
+            <img src="/logo_email.png" alt="GUELICHWEB" class="logo" />
+        </div>
+
+        <div class="content">
+            <div class="greeting">Bonjour Christ 👋,</div>
+
+            <div class="text">
+                Merci de vous être inscrit(e) à la newsletter <strong>GUELICHWEB</strong> !<br>Nous sommes ravis de vous
+                compter parmi nous.
+            </div>
+
+            <div class="coupon-box">
+                <div class="coupon-label">CODE PROMO :</div>
+                <div class="coupon-code">WELCOME10</div>
+                <div style="margin-top: 16px; font-size: 13px; color: #9a3412;">
+                    <strong>Validité :</strong> 30 jours à compter d'aujourd'hui
+                </div>
+            </div>
+
+            <div class="services-list">
+                <div class="services-title">
+                    <span>🎁</span> 👉 Ce coupon est valable sur :
+                </div>
+                <ul>
+                    <li><span class="check-icon">✓</span>Création de site web</li>
+                    <li><span class="check-icon">✓</span>Application web ou mobile</li>
+                    <li><span class="check-icon">✓</span>Projet e-commerce</li>
+                    <li><span class="check-icon">✓</span>SEO & solutions digitales</li>
+                </ul>
+            </div>
+
+            <div class="text" style="text-align: center; margin-top: 32px;">
+                Utilisez simplement le code <strong>WELCOME10</strong> lors de votre demande de devis ou mentionnez-le
+                lors de votre prise de contact.
+            </div>
+
+            <div class="cta-section">
+                <a href="#" class="cta-button">
+                    Démarrer mon projet maintenant
+                </a>
+                <br>
+                <a href="#" class="cta-secondary">
+                    Demander un devis gratuit →
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p style="margin-bottom: 16px; font-weight: 600; color: #475569;"><strong>L'équipe GUELICHWEB</strong></p>
+            <p style="margin-bottom: 24px;">🌐 Votre partenaire digital premium</p>
+
+            <div style="border-top: 1px solid #e2e8f0; margin: 24px 0;"></div>
+
+            <p style="font-size: 12px; line-height: 1.5;">
+                🔒 Vos données sont en sécurité.<br>Vous pouvez vous désinscrire à tout moment depuis nos emails.
+            </p>
+            <p style="font-size: 12px; margin-top: 12px;">
+                © 2026 GUELICHWEB. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, Check, Phone, Mail, MapPin, Clock, ChevronDown, User, MessageSquare, Sparkles, Shield, Zap, Target, Award, Lock } from 'lucide-react';
 import { getTranslation, Language } from './translations';
 import { PortfolioModal } from './components/PortfolioModal';
+import { ConfirmModal } from './components/ConfirmModal';
 import { AdminLogin } from './components/AdminLogin';
 import { AdminDashboard } from './components/AdminDashboard';
 import { supabase } from './lib/supabase';
@@ -70,6 +71,16 @@ function App() {
     name: '',
     email: '',
     consent: false,
+  });
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'info' | 'success';
+    onConfirm: () => void;
+  }>({
+    isOpen: false, title: '', message: '', type: 'info', onConfirm: () => { }
   });
 
   const services = [
@@ -142,11 +153,23 @@ function App() {
         }]);
 
       if (error) throw error;
-      alert(t.projectForm.successMessage);
+      setConfirmModal({
+        isOpen: true,
+        title: t.projectForm.title,
+        message: t.projectForm.successMessage,
+        type: 'success',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
       setFormData({ name: '', email: '', phone: '+229', projectType: '', budget: '', description: '', consent: false });
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert(t.projectForm.successMessage);
+      setConfirmModal({
+        isOpen: true,
+        title: 'Erreur',
+        message: 'Une erreur est survenue lors de l\'envoi du formulaire. Veuillez réessayer.',
+        type: 'danger',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
     }
   };
 
@@ -173,14 +196,32 @@ function App() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(t.newsletter.successMessage);
+        setConfirmModal({
+          isOpen: true,
+          title: t.newsletter.title,
+          message: t.newsletter.successMessage,
+          type: 'success',
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+        });
         setNewsletterData({ name: '', email: '', consent: false });
       } else {
-        alert(data.error || 'Une erreur est survenue');
+        setConfirmModal({
+          isOpen: true,
+          title: 'Erreur',
+          message: data.error || 'Une erreur est survenue',
+          type: 'danger',
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+        });
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Une erreur est survenue lors de l\'inscription');
+      setConfirmModal({
+        isOpen: true,
+        title: 'Erreur',
+        message: 'Une erreur est survenue lors de l\'inscription',
+        type: 'danger',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
     }
   };
 
@@ -1033,6 +1074,32 @@ function App() {
           </div>
         </div>
       </a>
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15860.038706346766!2d2.3451554999999997!3d6.393438450000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1023559312c9c729%3A0xc3995878864f1642!2sPharmacie%20Aitchedji!5e0!3m2!1sfr!2sbj!4v1709494444444!5m2!1sfr!2sbj" width="100%" height="300" style={{ border: 0 }} allowFullScreen loading="lazy"></iframe>
+
+      {/* Modals */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-2xl max-w-2xl max-h-[80vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold mb-4">Politique de confidentialité</h3>
+            <p>Vos données sont sécurisées et ne seront jamais partagées avec des tiers.</p>
+            <button onClick={() => setShowPrivacyModal(false)} className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-xl">Fermer</button>
+          </div>
+        </div>
+      )}
+
+      {showPortfolioModal && (
+        <PortfolioModal isOpen={showPortfolioModal} onClose={() => setShowPortfolioModal(false)} language={language} />
+      )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        language={language}
+      />
     </div>
   );
 }
