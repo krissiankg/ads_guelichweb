@@ -1,16 +1,65 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GUELICHWEB Website Replication</title>
-    <meta property="og:image" content="https://bolt.new/static/og_default.png" />
+
+    <!-- SEO -->
+    <title>GUELICHWEB — Agence Web, Design & Vidéo</title>
+    <meta name="description" content="GUELICHWEB : création de sites web, applications mobiles, design graphique et production vidéo. Votre partenaire digital en Suisse." />
+    <meta name="keywords" content="agence web, design graphique, vidéo, création site internet, application mobile, Suisse" />
+    <meta name="author" content="GUELICHWEB" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="GUELICHWEB — Agence Web, Design & Vidéo" />
+    <meta property="og:description" content="Création de sites web, applications, design graphique et vidéo. Votre partenaire digital." />
+    <meta property="og:url" content="https://guelichweb.ch" />
+    <meta property="og:site_name" content="GUELICHWEB" />
+    <meta property="og:locale" content="fr_CH" />
+
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png" />
+    <meta name="twitter:title" content="GUELICHWEB — Agence Web, Design & Vidéo" />
+    <meta name="twitter:description" content="Création de sites web, applications, design graphique et vidéo." />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1e293b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "GUELICHWEB",
+      "url": "https://guelichweb.ch",
+      "description": "Agence de création web, design graphique et production vidéo en Suisse.",
+      "sameAs": [],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": ["French", "English"]
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
