@@ -4,6 +4,7 @@ export const translations = {
   fr: {
     header: {
       freeQuote: 'Devis Gratuit',
+      portfolio: 'Portfolio',
       startProject: 'Démarrer mon projet',
     },
     hero: {
@@ -165,6 +166,7 @@ export const translations = {
   en: {
     header: {
       freeQuote: 'Free Quote',
+      portfolio: 'Portfolio',
       startProject: 'Start My Project',
     },
     hero: {

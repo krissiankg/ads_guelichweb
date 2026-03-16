@@ -287,6 +287,12 @@ function App() {
                 {t.header.freeQuote}
               </a>
               <button
+                onClick={() => setShowPortfolioModal(true)}
+                className="text-slate-700 hover:text-blue-600 font-medium transition-all duration-300 px-4 py-2 rounded-xl hover:bg-slate-100 flex items-center space-x-2"
+              >
+                <span>{t.header.portfolio}</span>
+              </button>
+              <button
                 onClick={() => document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth' })}
                 className="relative group bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 transform hover:-translate-y-0.5"
               >
@@ -328,6 +334,15 @@ function App() {
               <a href="#contact" className="block text-slate-700 hover:text-blue-600 font-medium px-2 py-2">
                 {t.header.freeQuote}
               </a>
+              <button
+                onClick={() => {
+                  setShowPortfolioModal(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-slate-700 hover:text-blue-600 font-medium px-2 py-2"
+              >
+                {t.header.portfolio}
+              </button>
               <button
                 onClick={() => {
                   document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth' });
