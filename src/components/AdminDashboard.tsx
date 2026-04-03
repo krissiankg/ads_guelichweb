@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Plus, Edit2, Trash2, Eye, EyeOff, Save, LogOut,
-  ExternalLink, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Search, Download, FileSpreadsheet, GripVertical, Bell,
   LayoutDashboard, FileText, Globe, Palette, Video,
-  Mail, Phone, Calendar, Filter, MoreVertical, ArrowUpDown,
-  Clock, Users, FolderOpen, TrendingUp, Play
+  Mail, Phone, Calendar, MoreVertical, Trophy,
+  TrendingUp, FolderOpen, Play
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { supabase, PortfolioProject, ProjectSubmission, NewsletterSubscriber, VideoPortfolio, uploadImage, deleteImage } from '../lib/supabase';
+import { supabase, PortfolioProject, ProjectSubmission, NewsletterSubscriber, VideoPortfolio, ContestSubmission } from '../lib/supabase';
 import { Language } from '../translations';
 import { ImageUploader, MultiImageUploader } from './ImageUploader';
 import { ConfirmModal } from './ConfirmModal';
@@ -18,7 +18,7 @@ interface AdminDashboardProps {
   language: Language;
 }
 
-type Tab = 'dashboard' | 'forms-project' | 'forms-newsletter' | 'portfolio-web' | 'portfolio-graphic' | 'portfolio-video';
+type Tab = 'dashboard' | 'forms-project' | 'forms-newsletter' | 'forms-contest' | 'portfolio-web' | 'portfolio-graphic' | 'portfolio-video';
 
 // CSV export utility
 function exportCSV(data: Record<string, any>[], filename: string) {
@@ -55,6 +55,7 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   // Data states
   const [submissions, setSubmissions] = useState<ProjectSubmission[]>([]);
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
+  const [contestSubmissions, setContestSubmissions] = useState<ContestSubmission[]>([]);
   const [webProjects, setWebProjects] = useState<PortfolioProject[]>([]);
   const [graphicProjects, setGraphicProjects] = useState<PortfolioProject[]>([]);
   const [videos, setVideos] = useState<VideoPortfolio[]>([]);
@@ -147,15 +148,17 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [subRes, newsRes, webRes, gfxRes, vidRes] = await Promise.all([
+      const [subRes, newsRes, contestRes, webRes, gfxRes, vidRes] = await Promise.all([
         supabase.from('project_submissions').select('*').order('created_at', { ascending: false }),
         supabase.from('newsletter_subscribers').select('*').order('subscribed_at', { ascending: false }),
+        supabase.from('contest_submissions').select('*').order('created_at', { ascending: false }),
         supabase.from('portfolio_projects').select('*').eq('portfolio_type', 'web_app').order('order_index'),
         supabase.from('portfolio_projects').select('*').eq('portfolio_type', 'graphic_design').order('order_index'),
         supabase.from('video_portfolio').select('*').order('order_index'),
       ]);
       setSubmissions(subRes.data || []);
       setSubscribers(newsRes.data || []);
+      setContestSubmissions(contestRes.data || []);
       setWebProjects(webRes.data || []);
       setGraphicProjects(gfxRes.data || []);
       setVideos(vidRes.data || []);
@@ -164,6 +167,7 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   };
 
   const newSubmissionsCount = useMemo(() => submissions.filter(s => s.status === 'new').length, [submissions]);
+  const newContestCount = useMemo(() => contestSubmissions.filter(s => s.status === 'new').length, [contestSubmissions]);
 
   const handleLogout = async () => { await supabase.auth.signOut(); onLogout(); };
 
@@ -268,6 +272,11 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
     fetchAll();
   };
 
+  const updateContestStatus = async (id: string, status: string) => {
+    await supabase.from('contest_submissions').update({ status }).eq('id', id);
+    fetchAll();
+  };
+
   // --- Edit handlers ---
   const editWebProject = (p: PortfolioProject) => {
     setEditingItem(p);
@@ -317,6 +326,7 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   const navItems = [
     { id: 'dashboard' as Tab, icon: LayoutDashboard, label: fr ? 'Tableau de bord' : 'Dashboard' },
     { id: 'forms-project' as Tab, icon: FileText, label: fr ? 'Demandes projet' : 'Project Requests', badge: newSubmissionsCount },
+    { id: 'forms-contest' as Tab, icon: Trophy, label: fr ? 'Jeu Concours' : 'Contest Entries', badge: newContestCount },
     { id: 'forms-newsletter' as Tab, icon: Mail, label: 'Newsletter' },
     { id: 'portfolio-web' as Tab, icon: Globe, label: fr ? 'Portfolio Web/App' : 'Web/App Portfolio' },
     { id: 'portfolio-graphic' as Tab, icon: Palette, label: fr ? 'Portfolio Graphique' : 'Graphic Portfolio' },
@@ -428,8 +438,9 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
             </div>
           ) : (
             <>
-              {activeTab === 'dashboard' && <DashboardTab submissions={submissions} subscribers={subscribers} webProjects={webProjects} graphicProjects={graphicProjects} videos={videos} fr={fr} />}
+              {activeTab === 'dashboard' && <DashboardTab submissions={submissions} subscribers={subscribers} contestSubmissions={contestSubmissions} webProjects={webProjects} graphicProjects={graphicProjects} videos={videos} fr={fr} />}
               {activeTab === 'forms-project' && <SubmissionsTab submissions={submissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateSubmissionStatus} deleteItem={canDelete ? (id: string) => deleteItem('project_submissions', id) : null} fr={fr} />}
+              {activeTab === 'forms-contest' && <ContestTab submissions={contestSubmissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateContestStatus} deleteItem={canDelete ? (id: string) => deleteItem('contest_submissions', id) : null} fr={fr} />}
               {activeTab === 'forms-newsletter' && <NewsletterTab subscribers={subscribers} searchQuery={searchQuery} setSearchQuery={setSearchQuery} fr={fr} />}
               {activeTab === 'portfolio-web' && <WebPortfolioTab projects={webProjects} onEdit={canEdit ? editWebProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
               {activeTab === 'portfolio-graphic' && <GraphicPortfolioTab projects={graphicProjects} onEdit={canEdit ? editGraphicProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
@@ -476,18 +487,180 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   );
 }
 
+// --- Contest Tab ---
+function ContestTab({ submissions, searchQuery, setSearchQuery, updateStatus, deleteItem, fr }: any) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const filtered = submissions.filter((s: ContestSubmission) =>
+    !searchQuery || [s.full_name, s.email, s.whatsapp, s.company_name, s.sector, s.activity_description].some(v => v?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  const paged = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const getExportData = () => submissions.map((s: ContestSubmission) => ({
+    Nom: s.full_name,
+    Email: s.email,
+    WhatsApp: s.whatsapp,
+    Entreprise: s.company_name,
+    Secteur: s.sector,
+    'A déjà des clients': s.has_clients,
+    'Présence réseaux': s.has_social_media,
+    Description: s.activity_description,
+    'Pourquoi gagner': s.why_win,
+    Statut: s.status,
+    Date: s.created_at
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setPage(1); }} placeholder={fr ? 'Rechercher un candidat...' : 'Search candidates...'} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+        </div>
+        <button onClick={() => exportCSV(getExportData(), 'concours_guelichweb')} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-sm font-medium transition-colors">
+          <Download size={16} /> CSV
+        </button>
+        <button onClick={() => exportXLSX(getExportData(), 'concours_guelichweb')} className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-medium transition-colors">
+          <FileSpreadsheet size={16} /> XLSX
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-slate-600">
+                <th className="px-4 py-3 text-left font-semibold w-8"></th>
+                <th className="px-4 py-3 text-left font-semibold">{fr ? 'Statut' : 'Status'}</th>
+                <th className="px-4 py-3 text-left font-semibold">{fr ? 'Nom complet' : 'Full Name'}</th>
+                <th className="px-4 py-3 text-left font-semibold">Email</th>
+                <th className="px-4 py-3 text-left font-semibold">WhatsApp</th>
+                <th className="px-4 py-3 text-left font-semibold">{fr ? 'Secteur' : 'Sector'}</th>
+                <th className="px-4 py-3 text-left font-semibold">{fr ? 'Entreprise' : 'Business'}</th>
+                <th className="px-4 py-3 text-left font-semibold">Date</th>
+                <th className="px-4 py-3 text-left font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.map((s: ContestSubmission) => (
+                <React.Fragment key={s.id}>
+                  <tr onClick={() => setExpandedId(expandedId === s.id ? null : s.id)} className="border-t border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer">
+                    <td className="px-4 py-3">
+                      {expandedId === s.id ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                    </td>
+                    <td className="px-4 py-3">
+                      <select 
+                        value={s.status} 
+                        onChange={e => { e.stopPropagation(); updateStatus(s.id, e.target.value); }} 
+                        onClick={e => e.stopPropagation()}
+                        className={`text-xs font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer ${
+                          s.status === 'new' ? 'bg-blue-100 text-blue-700' : 
+                          s.status === 'contacted' ? 'bg-amber-100 text-amber-700' : 
+                          s.status === 'selected' ? 'bg-emerald-100 text-emerald-700' : 
+                          'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        <option value="new">{fr ? 'Nouveau' : 'New'}</option>
+                        <option value="contacted">{fr ? 'Contacté' : 'Contacted'}</option>
+                        <option value="selected">{fr ? 'Sélectionné' : 'Selected'}</option>
+                        <option value="rejected">{fr ? 'Refusé' : 'Rejected'}</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-900">{s.full_name}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-slate-500">{s.email}</div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 font-medium">{s.whatsapp}</td>
+                    <td className="px-4 py-3">
+                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">{s.sector}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-slate-600 font-medium truncate max-w-[120px] block">
+                        {s.company_name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">{new Date(s.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={(e) => { e.stopPropagation(); deleteItem(s.id); }} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={15} /></button>
+                    </td>
+                  </tr>
+                  {expandedId === s.id && (
+                    <tr className="bg-blue-50/30">
+                      <td colSpan={9} className="px-6 py-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">{fr ? 'Détails de l\'entreprise' : 'Business Details'}</p>
+                              <div className="bg-white rounded-xl p-4 border border-slate-200">
+                                <p className="text-sm text-slate-600"><span className="font-bold">{fr ? 'Nom :' : 'Name:'}</span> {s.company_name}</p>
+                                <p className="text-sm text-slate-600"><span className="font-bold">{fr ? 'Secteur :' : 'Sector:'}</span> {s.sector}</p>
+                                <p className="text-sm text-slate-600"><span className="font-bold">{fr ? 'Déjà des clients :' : 'Already has clients:'}</span> {s.has_clients}</p>
+                                <p className="text-sm text-slate-600"><span className="font-bold">{fr ? 'Réseaux sociaux :' : 'Social media:'}</span> {s.has_social_media}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">{fr ? 'Description de l\'activité' : 'Business Description'}</p>
+                              <div className="bg-white rounded-xl p-4 border border-slate-200">
+                                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{s.activity_description}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">{fr ? 'Motivation (Pourquoi gagner ?)' : 'Motivation (Why win?)'}</p>
+                              <div className="bg-white rounded-xl p-4 border border-slate-200 bg-amber-50/30">
+                                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap italic font-medium">"{s.why_win}"</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <a 
+                                  href={`https://wa.me/${s.whatsapp.replace(/\D/g, '')}`} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
+                                >
+                                  <Phone size={16} /> WhatsApp
+                                </a>
+                                <a 
+                                  href={`mailto:${s.email}`} 
+                                  className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white py-2 rounded-xl font-bold hover:bg-slate-900 transition-colors"
+                                >
+                                  <Mail size={16} /> Email
+                                </a>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+              {!filtered.length && <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-400">{fr ? 'Aucun candidat trouvé' : 'No candidates found'}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-4 py-3 border-t border-slate-100">
+          <Pagination total={filtered.length} page={page} setPage={setPage} fr={fr} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // =======================================================================
 // SUB-COMPONENTS
 // =======================================================================
 
 // --- Dashboard Tab ---
-function DashboardTab({ submissions, subscribers, webProjects, graphicProjects, videos, fr }: any) {
+function DashboardTab({ submissions, subscribers, contestSubmissions = [], webProjects, graphicProjects, videos, fr }: any) {
   const stats = [
     { label: fr ? 'Demandes projet' : 'Project Requests', value: submissions.length, icon: FileText, color: 'from-blue-500 to-blue-600', newCount: submissions.filter((s: any) => s.status === 'new').length },
+    { label: fr ? 'Jeu Concours' : 'Business Contest', value: contestSubmissions.length, icon: Trophy, color: 'from-purple-600 to-indigo-600', newCount: contestSubmissions.filter((s: any) => s.status === 'new').length },
     { label: 'Newsletter', value: subscribers.length, icon: Mail, color: 'from-emerald-500 to-emerald-600' },
-    { label: fr ? 'Projets Web/App' : 'Web/App Projects', value: webProjects.length, icon: Globe, color: 'from-purple-500 to-purple-600' },
-    { label: fr ? 'Designs Graphiques' : 'Graphic Designs', value: graphicProjects.length, icon: Palette, color: 'from-amber-500 to-amber-600' },
-    { label: fr ? 'Vidéos' : 'Videos', value: videos.length, icon: Video, color: 'from-rose-500 to-rose-600' },
+    { label: fr ? 'Projets Web/App' : 'Web/App Projects', value: webProjects.length, icon: Globe, color: 'from-blue-400 to-blue-600' },
+    { label: fr ? 'Designs Graphique/Vidéo' : 'Design / Video', value: graphicProjects.length + videos.length, icon: Palette, color: 'from-amber-500 to-amber-600' },
   ];
 
   // --- 30-day bar chart data ---
@@ -612,20 +785,49 @@ function DashboardTab({ submissions, subscribers, webProjects, graphicProjects, 
         </div>
       </div>
 
-      {/* Latest Requests */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-        <h3 className="font-bold text-slate-900 mb-4">{fr ? 'Dernières demandes' : 'Latest Requests'}</h3>
-        {submissions.slice(0, 5).map((s: ProjectSubmission) => (
-          <div key={s.id} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0">
-            <div className={`w-2 h-2 rounded-full ${s.status === 'new' ? 'bg-blue-500' : s.status === 'read' ? 'bg-amber-500' : 'bg-slate-300'}`} />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-900 text-sm truncate">{s.name}</p>
-              <p className="text-xs text-slate-500">{s.project_type} — {s.email}</p>
-            </div>
-            <span className="text-xs text-slate-400">{new Date(s.created_at).toLocaleDateString()}</span>
+      {/* Row: Recent Activity Split */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Latest Requests */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <FileText size={18} className="text-blue-600" />
+            {fr ? 'Dernières demandes projets' : 'Latest Project Requests'}
+          </h3>
+          <div className="space-y-1">
+            {submissions.slice(0, 5).map((s: ProjectSubmission) => (
+              <div key={s.id} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors px-2 rounded-xl">
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status === 'new' ? 'bg-blue-500' : s.status === 'read' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-slate-900 text-sm truncate">{s.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{s.project_type} — {s.email}</p>
+                </div>
+                <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.created_at).toLocaleDateString()}</span>
+              </div>
+            ))}
+            {!submissions.length && <p className="text-slate-400 text-center py-4">{fr ? 'Aucune demande' : 'No requests'}</p>}
           </div>
-        ))}
-        {!submissions.length && <p className="text-slate-400 text-center py-4">{fr ? 'Aucune demande' : 'No requests'}</p>}
+        </div>
+
+        {/* Latest Contest Activity */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Trophy size={18} className="text-amber-500" />
+            {fr ? 'Derniers participants au Concours' : 'Latest Contest Participants'}
+          </h3>
+          <div className="space-y-1">
+            {contestSubmissions.slice(0, 5).map((s: ContestSubmission) => (
+              <div key={s.id} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors px-2 rounded-xl">
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status === 'new' ? 'bg-blue-500' : s.status === 'contacted' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-slate-900 text-sm truncate">{s.full_name}</p>
+                  <p className="text-xs text-slate-500 truncate">{s.company_name} — {s.sector}</p>
+                </div>
+                <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.created_at).toLocaleDateString()}</span>
+              </div>
+            ))}
+            {!contestSubmissions.length && <p className="text-slate-400 text-center py-4">{fr ? 'Aucun participant' : 'No participants'}</p>}
+          </div>
+        </div>
       </div>
     </div>
   );

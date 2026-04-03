@@ -70,8 +70,9 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
   return (
     <>
       {/* Main Modal */}
-      <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-        <div className="bg-white rounded-3xl max-w-7xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-3xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+        <AnimatedBackground />
+        <div className="bg-white rounded-3xl max-w-7xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
           {/* Header */}
           <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 flex justify-between items-center z-10">
             <div>
@@ -256,7 +257,8 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
 
       {/* ========== LIGHTBOX (for graphic images) ========== */}
       {lightboxImage && (
-        <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4" onClick={() => setLightboxImage(null)}>
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-3xl z-[70] flex items-center justify-center p-4" onClick={() => setLightboxImage(null)}>
+          <AnimatedBackground />
           <button className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors" onClick={() => setLightboxImage(null)}>
             <X className="text-white" size={28} />
           </button>
@@ -297,8 +299,9 @@ function ProjectDetailOverlay({ project, fr, currentImageIndex, setCurrentImageI
   const prevImage = () => setCurrentImageIndex((currentImageIndex - 1 + images.length) % images.length);
 
   return (
-    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-3xl z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <AnimatedBackground />
+      <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
         {/* Image viewer */}
         <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
           <div className="relative flex items-center justify-center max-h-[70vh]">
@@ -423,8 +426,9 @@ function ProjectDetailOverlay({ project, fr, currentImageIndex, setCurrentImageI
 // --- Video Player Overlay ---
 function VideoPlayerOverlay({ video, fr, onClose }: { video: VideoPortfolio; fr: boolean; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-3xl z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <AnimatedBackground />
+      <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
         {/* Video Player Area */}
         <div className="relative bg-black rounded-t-3xl overflow-hidden">
           {video.video_embed ? (
@@ -501,4 +505,15 @@ function extractYouTubeId(url: string): string {
 function extractVimeoId(url: string): string {
   const match = url.match(/vimeo\.com\/(\d+)/);
   return match ? match[1] : '';
+}
+
+function AnimatedBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none animate-hue opacity-60">
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/30 blur-[120px] animate-float" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/30 blur-[120px] animate-float-delayed" />
+      <div className="absolute top-[20%] right-[-5%] w-[40%] h-[40%] rounded-full bg-purple-600/30 blur-[100px] animate-float-slow" />
+      <div className="absolute bottom-[20%] left-[-5%] w-[40%] h-[40%] rounded-full bg-sky-600/30 blur-[100px] animate-float" />
+    </div>
+  );
 }

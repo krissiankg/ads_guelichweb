@@ -67,6 +67,22 @@ export interface NewsletterSubscriber {
   created_at: string;
 }
 
+export interface ContestSubmission {
+  id: string;
+  full_name: string;
+  email: string;
+  whatsapp: string;
+  company_name: string;
+  sector: string;
+  has_clients: string;
+  has_social_media: string;
+  activity_description: string;
+  why_win: string;
+  ready_to_invest: string;
+  status: 'new' | 'contacted' | 'selected' | 'rejected';
+  created_at: string;
+}
+
 export interface VideoPortfolio {
   id: string;
   title: string;
