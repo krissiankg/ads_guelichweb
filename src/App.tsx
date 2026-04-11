@@ -7,6 +7,7 @@ import { AdminLogin } from './components/AdminLogin';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ContestPage } from './components/ContestPage';
 import { supabase } from './lib/supabase';
+import { Toaster, toast } from 'react-hot-toast';
 
 function App() {
   const [language, setLanguage] = useState<Language>('fr');
@@ -147,8 +148,10 @@ function App() {
     'Top Revolution Barber Shop',
   ];
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (new FormData(e.currentTarget).get('_honey')) return; // Anti-spam Honeypot
+
     try {
       const { error } = await supabase
         .from('project_submissions')
@@ -163,28 +166,17 @@ function App() {
         }]);
 
       if (error) throw error;
-      setConfirmModal({
-        isOpen: true,
-        title: t.projectForm.title,
-        message: t.projectForm.successMessage,
-        type: 'success',
-        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-      });
+      toast.success(t.projectForm.successMessage, { duration: 5000 });
       setFormData({ name: '', email: '', phone: '+229', projectType: '', budget: '', description: '', consent: false });
     } catch (error) {
       console.error('Error submitting form:', error);
-      setConfirmModal({
-        isOpen: true,
-        title: 'Erreur',
-        message: 'Une erreur est survenue lors de l\'envoi du formulaire. Veuillez réessayer.',
-        type: 'danger',
-        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-      });
+      toast.error('Une erreur est survenue lors de l\'envoi du formulaire. Veuillez réessayer.', { duration: 5000 });
     }
   };
 
-  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (new FormData(e.currentTarget).get('_honey')) return; // Anti-spam Honeypot
 
     try {
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/newsletter-subscribe`;
@@ -206,32 +198,14 @@ function App() {
       const data = await response.json();
 
       if (response.ok) {
-        setConfirmModal({
-          isOpen: true,
-          title: t.newsletter.title,
-          message: t.newsletter.successMessage,
-          type: 'success',
-          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-        });
+        toast.success(t.newsletter.successMessage, { duration: 5000 });
         setNewsletterData({ name: '', email: '', consent: false });
       } else {
-        setConfirmModal({
-          isOpen: true,
-          title: 'Erreur',
-          message: data.error || 'Une erreur est survenue',
-          type: 'danger',
-          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-        });
+        toast.error(data.error || 'Une erreur est survenue', { duration: 5000 });
       }
     } catch (error) {
       console.error('Error:', error);
-      setConfirmModal({
-        isOpen: true,
-        title: 'Erreur',
-        message: 'Une erreur est survenue lors de l\'inscription',
-        type: 'danger',
-        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-      });
+      toast.error('Une erreur est survenue lors de l\'inscription', { duration: 5000 });
     }
   };
 
@@ -578,6 +552,7 @@ function App() {
 
                   <div className="bg-white rounded-3xl shadow-2xl shadow-slate-900/5 p-8 md:p-10 border border-slate-200/60">
                     <form onSubmit={handleFormSubmit} className="space-y-6">
+                      <input type="text" name="_honey" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
                       <div>
                         <label htmlFor="name" className="flex items-center text-sm font-semibold text-slate-700 mb-2">
                           <User size={16} className="mr-2 text-blue-600" />
@@ -774,6 +749,7 @@ function App() {
                 </div>
 
                 <form onSubmit={handleNewsletterSubmit} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 shadow-2xl space-y-6">
+                  <input type="text" name="_honey" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
                   <div>
                     <input
                       type="text"
@@ -1200,6 +1176,11 @@ function App() {
         type={confirmModal.type}
         language={language}
       />
+      <Toaster position="bottom-right" toastOptions={{
+        className: 'font-sans font-medium rounded-2xl shadow-xl border border-slate-100',
+        success: { iconTheme: { primary: '#10b981', secondary: 'white' } },
+        error: { iconTheme: { primary: '#ef4444', secondary: 'white' } }
+      }} />
     </div>
   );
 }

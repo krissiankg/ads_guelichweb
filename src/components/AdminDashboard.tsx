@@ -373,7 +373,7 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
       </div>
 
       {/* Glass Container */}
-      <div className="relative z-10 w-full h-full max-h-[94vh] flex bg-white/40 backdrop-blur-3xl border border-white/60 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] rounded-[2.5rem] overflow-hidden">
+      <div className="relative z-10 w-[96vw] max-w-[1600px] h-[94vh] flex bg-white/40 backdrop-blur-3xl border border-white/60 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] rounded-[2.5rem] overflow-hidden">
         {/* Sidebar */}
         <aside className={`${sidebarOpen ? 'w-64' : 'w-24'} flex-shrink-0 flex flex-col transition-all duration-300 border-r border-white/30 z-50 bg-white/10`}>
           <div className="p-6 flex items-center gap-3 mt-4">
@@ -412,8 +412,8 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
         </aside>
 
         {/* Main Content */}
-        <main className={`flex-1 flex flex-col h-full overflow-hidden`}>
-          <header className="bg-transparent top-0 z-40 rounded-t-[2.5rem]">
+        <main className={`flex-1 min-w-0 flex flex-col h-full overflow-hidden`}>
+          <header className="bg-transparent top-0 z-40 rounded-t-[2.5rem] flex-shrink-0">
             <div className="px-10 py-8 flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">{navItems.find(n => n.id === activeTab)?.label}</h1>
@@ -471,7 +471,7 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
             </div>
           </header>
 
-          <div className="flex-1 overflow-x-hidden overflow-y-auto px-10 pb-10 custom-scrollbar">
+          <div className="flex-1 h-0 overflow-x-hidden overflow-y-auto px-4 md:px-10 pb-10">
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-900 border-t-transparent" />
@@ -932,7 +932,32 @@ function useDragReorder<T extends { id: string; order_index: number }>(items: T[
     setDragId(null);
     window.dispatchEvent(new Event('portfolio-reorder'));
   };
-  return { dragId, onDragStart, onDragOver, onDrop };
+
+  const moveUp = async (id: string) => {
+    const fromIdx = items.findIndex(i => i.id === id);
+    if (fromIdx <= 0) return;
+    const toIdx = fromIdx - 1;
+    const reordered = [...items];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    const updates = reordered.map((item, idx) => supabase.from(table).update({ order_index: idx }).eq('id', item.id));
+    await Promise.all(updates);
+    window.dispatchEvent(new Event('portfolio-reorder'));
+  };
+
+  const moveDown = async (id: string) => {
+    const fromIdx = items.findIndex(i => i.id === id);
+    if (fromIdx === -1 || fromIdx === items.length - 1) return;
+    const toIdx = fromIdx + 1;
+    const reordered = [...items];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    const updates = reordered.map((item, idx) => supabase.from(table).update({ order_index: idx }).eq('id', item.id));
+    await Promise.all(updates);
+    window.dispatchEvent(new Event('portfolio-reorder'));
+  };
+
+  return { dragId, onDragStart, onDragOver, onDrop, moveUp, moveDown };
 }
 
 // --- Submissions Tab ---
@@ -1141,12 +1166,11 @@ function NewsletterTab({ subscribers, searchQuery, setSearchQuery, fr, deleteIte
 
 // --- Web Portfolio Tab ---
 function WebPortfolioTab({ projects, onEdit, onDelete, onToggle, fr }: any) {
-  const { dragId, onDragStart, onDragOver, onDrop } = useDragReorder(projects, 'portfolio_projects');
+  const { moveUp, moveDown } = useDragReorder(projects, 'portfolio_projects');
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {projects.map((p: PortfolioProject) => (
-        <div key={p.id} draggable onDragStart={e => onDragStart(e, p.id)} onDragOver={onDragOver} onDrop={e => onDrop(e, p.id)}
-          className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all group ${dragId === p.id ? 'opacity-50 border-blue-400 border-2' : 'border-slate-100'}`}>
+      {projects.map((p: PortfolioProject, idx: number) => (
+        <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-all group">
           <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
             <img src={p.thumbnail_url} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             {!p.is_visible && <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center"><span className="bg-white/90 px-3 py-1 rounded-lg text-sm font-semibold text-slate-800">{fr ? 'Masqué' : 'Hidden'}</span></div>}
@@ -1154,6 +1178,10 @@ function WebPortfolioTab({ projects, onEdit, onDelete, onToggle, fr }: any) {
           </div>
           <div className="p-4">
             <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-0.5 mr-1">
+                <button onClick={() => moveUp(p.id)} disabled={idx === 0} className={`p-0.5 rounded-sm hover:bg-slate-100 ${idx === 0 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-slate-800'}`}><ChevronUp size={14} /></button>
+                <button onClick={() => moveDown(p.id)} disabled={idx === projects.length - 1} className={`p-0.5 rounded-sm hover:bg-slate-100 ${idx === projects.length - 1 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-slate-800'}`}><ChevronDown size={14} /></button>
+              </div>
               <GripVertical size={14} className="text-slate-300 cursor-grab flex-shrink-0" />
               <h3 className="font-bold text-slate-900 truncate">{p.title}</h3>
             </div>
@@ -1173,12 +1201,11 @@ function WebPortfolioTab({ projects, onEdit, onDelete, onToggle, fr }: any) {
 
 // --- Graphic Portfolio Tab ---
 function GraphicPortfolioTab({ projects, onEdit, onDelete, onToggle, fr }: any) {
-  const { dragId, onDragStart, onDragOver, onDrop } = useDragReorder(projects, 'portfolio_projects');
+  const { moveUp, moveDown } = useDragReorder(projects, 'portfolio_projects');
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {projects.map((p: PortfolioProject) => (
-        <div key={p.id} draggable onDragStart={e => onDragStart(e, p.id)} onDragOver={onDragOver} onDrop={e => onDrop(e, p.id)}
-          className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all group ${dragId === p.id ? 'opacity-50 border-purple-400 border-2' : 'border-slate-100'}`}>
+      {projects.map((p: PortfolioProject, idx: number) => (
+        <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-all group">
           <div className="aspect-square relative overflow-hidden bg-slate-100">
             <img src={p.thumbnail_url} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             {!p.is_visible && <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center"><span className="bg-white/90 px-3 py-1 rounded-lg text-sm font-semibold text-slate-800">{fr ? 'Masqué' : 'Hidden'}</span></div>}
@@ -1186,6 +1213,10 @@ function GraphicPortfolioTab({ projects, onEdit, onDelete, onToggle, fr }: any) 
           </div>
           <div className="p-4">
             <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-0.5 mr-1">
+                <button onClick={() => moveUp(p.id)} disabled={idx === 0} className={`p-0.5 rounded-sm hover:bg-slate-100 ${idx === 0 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-slate-800'}`}><ChevronUp size={14} /></button>
+                <button onClick={() => moveDown(p.id)} disabled={idx === projects.length - 1} className={`p-0.5 rounded-sm hover:bg-slate-100 ${idx === projects.length - 1 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-slate-800'}`}><ChevronDown size={14} /></button>
+              </div>
               <GripVertical size={14} className="text-slate-300 cursor-grab flex-shrink-0" />
               <h3 className="font-bold text-slate-900 truncate">{p.title}</h3>
             </div>
@@ -1205,13 +1236,12 @@ function GraphicPortfolioTab({ projects, onEdit, onDelete, onToggle, fr }: any) 
 
 // --- Video Portfolio Tab ---
 function VideoPortfolioTab({ videos, onEdit, onDelete, onToggle, fr }: any) {
-  const { dragId, onDragStart, onDragOver, onDrop } = useDragReorder(videos, 'video_portfolio');
+  const { moveUp, moveDown } = useDragReorder(videos, 'video_portfolio');
   const sizeLabels: Record<string, string> = { short: fr ? 'Court' : 'Short', medium: 'Medium', long: 'Long' };
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {videos.map((v: VideoPortfolio) => (
-        <div key={v.id} draggable onDragStart={e => onDragStart(e, v.id)} onDragOver={onDragOver} onDrop={e => onDrop(e, v.id)}
-          className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all group ${dragId === v.id ? 'opacity-50 border-rose-400 border-2' : 'border-slate-100'}`}>
+      {videos.map((v: VideoPortfolio, idx: number) => (
+        <div key={v.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-all group">
           <div className="aspect-video relative overflow-hidden bg-slate-100">
             <img src={v.cover_image_url} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             <div className="absolute inset-0 flex items-center justify-center">
@@ -1223,6 +1253,10 @@ function VideoPortfolioTab({ videos, onEdit, onDelete, onToggle, fr }: any) {
           </div>
           <div className="p-4">
             <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-0.5 mr-1">
+                <button onClick={() => moveUp(v.id)} disabled={idx === 0} className={`p-0.5 rounded-sm hover:bg-slate-100 ${idx === 0 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-slate-800'}`}><ChevronUp size={14} /></button>
+                <button onClick={() => moveDown(v.id)} disabled={idx === videos.length - 1} className={`p-0.5 rounded-sm hover:bg-slate-100 ${idx === videos.length - 1 ? 'opacity-30 cursor-not-allowed' : 'text-slate-500 hover:text-slate-800'}`}><ChevronDown size={14} /></button>
+              </div>
               <GripVertical size={14} className="text-slate-300 cursor-grab flex-shrink-0" />
               <h3 className="font-bold text-slate-900 truncate">{v.title}</h3>
             </div>

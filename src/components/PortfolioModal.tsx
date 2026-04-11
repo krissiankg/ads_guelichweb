@@ -305,7 +305,7 @@ function ProjectDetailOverlay({ project, fr, currentImageIndex, setCurrentImageI
         {/* Image viewer */}
         <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
           <div className="relative flex items-center justify-center max-h-[70vh]">
-            <img src={currentImage} alt={project.title} className="w-full max-h-[70vh] object-contain" />
+            <img src={currentImage} alt={project.title} className="w-full max-h-[70vh] object-contain" loading="lazy" />
             {images.length > 1 && (
               <>
                 <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full transition-all shadow-lg hover:scale-110">
@@ -341,7 +341,7 @@ function ProjectDetailOverlay({ project, fr, currentImageIndex, setCurrentImageI
                 <button key={idx} onClick={() => setCurrentImageIndex(idx)}
                   className={`flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border-2 transition-all ${idx === currentImageIndex ? 'border-blue-600 shadow-lg scale-105' : 'border-slate-200 hover:border-blue-400 opacity-60 hover:opacity-100'
                     }`}>
-                  <img src={img} alt={`${project.title} ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={img} alt={`${project.title} ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -464,7 +464,7 @@ function VideoPlayerOverlay({ video, fr, onClose }: { video: VideoPortfolio; fr:
             </div>
           ) : (
             <div className="aspect-video flex items-center justify-center">
-              <img src={video.cover_image_url} alt={video.title} className="w-full h-full object-cover" />
+              <img src={video.cover_image_url} alt={video.title} className="w-full h-full object-cover" loading="lazy" />
             </div>
           )}
           <button onClick={onClose} className="absolute top-4 right-4 p-3 bg-white/90 backdrop-blur-sm hover:bg-white rounded-xl transition-colors shadow-lg z-10">

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Language, getTranslation } from '../translations';
+import { toast } from 'react-hot-toast';
 
 interface ContestPageProps {
   language: Language;
@@ -51,8 +52,10 @@ export const ContestPage: React.FC<ContestPageProps> = ({ language, onClose }) =
     }
   }, [isSuccess, onClose]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (new FormData(e.currentTarget).get('_honey')) return; // Anti-spam Honeypot
+
     setIsSubmitting(true);
 
     try {
@@ -71,10 +74,11 @@ export const ContestPage: React.FC<ContestPageProps> = ({ language, onClose }) =
         }]);
 
       if (error) throw error;
+      toast.success(t.contest.form.success, { duration: 5000 });
       setIsSuccess(true);
     } catch (error) {
       console.error('Error submitting contest application:', error);
-      alert('Une erreur est survenue. Veuillez réessayer.');
+      toast.error('Une erreur est survenue. Veuillez réessayer.', { duration: 5000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -241,6 +245,7 @@ export const ContestPage: React.FC<ContestPageProps> = ({ language, onClose }) =
           </div>
 
           <form onSubmit={handleSubmit} className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl shadow-slate-200/60 border border-slate-100 space-y-10">
+            <input type="text" name="_honey" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Nom Complet */}
               <div className="space-y-3">
