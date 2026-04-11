@@ -236,7 +236,7 @@ export const ContestPage: React.FC<ContestPageProps> = ({ language, onClose }) =
           <div className="text-center mb-16 space-y-4">
             <h2 className="text-4xl font-black text-slate-900 tracking-tight">Candidature au Concours</h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Remplissez chaque champ avec soin. Nous recherchons des projets porteurs de sens et d\'ambition.
+              Remplissez chaque champ avec soin. Nous recherchons des projets porteurs de sens et d'ambition.
             </p>
           </div>
 

@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS contest_submissions (
   has_social_media boolean DEFAULT false NOT NULL,
   activity_description text NOT NULL,
   why_win text NOT NULL,
-  ready_to_invest boolean DEFAULT false NOT NULL,
   status text DEFAULT 'new' NOT NULL CHECK (status IN ('new', 'read', 'contacted', 'selected', 'archived')),
   created_at timestamptz DEFAULT now() NOT NULL
 );

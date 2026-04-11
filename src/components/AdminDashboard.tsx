@@ -262,6 +262,31 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
     });
   };
 
+  const deleteMultiple = (table: string, ids: string[]) => {
+    setConfirmModal({
+      isOpen: true,
+      title: fr ? 'Confirmation' : 'Confirmation',
+      message: fr ? `Voulez-vous vraiment supprimer les ${ids.length} éléments sélectionnés ? Cette action est irréversible.` : `Are you sure you want to delete the ${ids.length} selected items? This action cannot be undone.`,
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from(table).delete().in('id', ids);
+          if (error) throw error;
+          fetchAll();
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        } catch (e: any) {
+          setConfirmModal({
+            isOpen: true,
+            title: 'Erreur',
+            message: e.message,
+            type: 'danger',
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+          });
+        }
+      }
+    });
+  };
+
   const toggleVisibility = async (table: string, item: any) => {
     await supabase.from(table).update({ is_visible: !item.is_visible }).eq('id', item.id);
     fetchAll();
@@ -338,117 +363,133 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   const toggleSection = (key: string) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex">
-      {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-slate-900 text-white flex flex-col transition-all duration-300 fixed inset-y-0 left-0 z-50`}>
-        <div className="p-4 border-b border-slate-700 flex items-center gap-3">
-          {sidebarOpen && <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">GUELICHWEB</span>}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="ml-auto p-1.5 hover:bg-slate-700 rounded-lg transition-colors">
-            <MoreVertical size={18} />
-          </button>
-        </div>
-        <nav className="flex-1 py-3 space-y-1 px-2">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium ${activeTab === item.id ? 'bg-gradient-to-r from-blue-600/90 to-indigo-600/90 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-            >
-              <item.icon size={18} className="flex-shrink-0" />
-              {sidebarOpen && <span className="truncate">{item.label}</span>}
-              {sidebarOpen && item.badge ? (
-                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{item.badge}</span>
-              ) : null}
-            </button>
-          ))}
-        </nav>
-        <div className="p-3 border-t border-slate-700">
-          <button onClick={handleLogout} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-sm font-medium`}>
-            <LogOut size={18} />
-            {sidebarOpen && <span>{fr ? 'Déconnexion' : 'Logout'}</span>}
-          </button>
-        </div>
-      </aside>
+    <div className="min-h-screen relative p-4 sm:p-6 lg:p-8 flex items-center justify-center font-sans">
+      {/* Soft mesh background */}
+      <div className="fixed inset-0 bg-[#e6ebf2] -z-20"></div>
+      <div className="fixed inset-0 opacity-60 blur-[100px] pointer-events-none -z-10">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-300/40 rounded-full mix-blend-multiply"></div>
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-300/40 rounded-full mix-blend-multiply"></div>
+        <div className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-pink-200/40 rounded-full mix-blend-multiply"></div>
+      </div>
 
-      {/* Main Content */}
-      <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40">
-          <div className="px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">{navItems.find(n => n.id === activeTab)?.label}</h1>
-              <p className="text-sm text-slate-500">{fr ? 'Administration GUELICHWEB' : 'GUELICHWEB Administration'}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Notification Bell */}
-              <div className="relative">
-                <button onClick={() => setShowNotifPanel(!showNotifPanel)}
-                  className="relative p-2.5 hover:bg-slate-100 rounded-xl transition-colors">
-                  <Bell size={20} className="text-slate-600" />
-                  {notifications.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                      {notifications.length}
-                    </span>
-                  )}
-                </button>
-                {showNotifPanel && (
-                  <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
-                    <div className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
-                      <span className="text-white font-semibold text-sm">{fr ? 'Notifications' : 'Notifications'}</span>
-                      {notifications.length > 0 && (
-                        <button onClick={() => setNotifications([])} className="text-white/70 hover:text-white text-xs">
-                          {fr ? 'Tout effacer' : 'Clear all'}
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-72 overflow-y-auto">
-                      {notifications.length > 0 ? notifications.map(n => (
-                        <div key={n.id} className="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer"
-                          onClick={() => { setActiveTab('forms-project'); setShowNotifPanel(false); }}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-                            <p className="text-sm font-medium text-slate-900 truncate">{n.name}</p>
+      {/* Glass Container */}
+      <div className="relative z-10 w-full h-full max-h-[94vh] flex bg-white/40 backdrop-blur-3xl border border-white/60 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] rounded-[2.5rem] overflow-hidden">
+        {/* Sidebar */}
+        <aside className={`${sidebarOpen ? 'w-64' : 'w-24'} flex-shrink-0 flex flex-col transition-all duration-300 border-r border-white/30 z-50 bg-white/10`}>
+          <div className="p-6 flex items-center gap-3 mt-4">
+            {sidebarOpen ? (
+              <span className="font-extrabold text-2xl text-slate-800 tracking-tight ml-2">GUELICHWEB</span>
+            ) : (
+              <div className="w-10 h-10 bg-slate-800 rounded-xl mx-auto flex items-center justify-center"><span className="text-white font-bold">GW</span></div>
+            )}
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="ml-auto p-2 bg-white/50 hover:bg-white border border-white shadow-sm rounded-xl transition-all">
+              <MoreVertical size={18} className="text-slate-600" />
+            </button>
+          </div>
+          
+          <nav className="flex-1 py-6 space-y-3 px-4 overflow-y-auto">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-[1.25rem] transition-all duration-300 font-bold ${activeTab === item.id ? 'bg-white text-slate-900 shadow-md shadow-slate-200/50 border border-white/80 scale-[1.02]' : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'}`}
+              >
+                <item.icon size={20} className={activeTab === item.id ? "text-slate-900 drop-shadow-sm" : "text-slate-400"} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+                {sidebarOpen && <span className="truncate text-sm tracking-wide">{item.label}</span>}
+                {sidebarOpen && item.badge ? (
+                  <span className="ml-auto bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{item.badge}</span>
+                ) : null}
+              </button>
+            ))}
+          </nav>
+          
+          <div className="p-4 mt-auto mb-4 border-t border-white/20">
+            <button onClick={handleLogout} className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-[1.25rem] text-slate-500 hover:text-slate-800 hover:bg-white/40 border border-transparent hover:border-white/50 transition-all font-bold`}>
+              <LogOut size={20} strokeWidth={2.5} />
+              {sidebarOpen && <span className="text-sm tracking-wide">{fr ? 'Déconnexion' : 'Logout'}</span>}
+            </button>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className={`flex-1 flex flex-col h-full overflow-hidden`}>
+          <header className="bg-transparent top-0 z-40 rounded-t-[2.5rem]">
+            <div className="px-10 py-8 flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">{navItems.find(n => n.id === activeTab)?.label}</h1>
+                <p className="text-slate-500 font-medium text-sm tracking-wide">{fr ? 'Administration GUELICHWEB' : 'GUELICHWEB Administration'}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                {/* Notification Bell */}
+                <div className="relative">
+                  <button onClick={() => setShowNotifPanel(!showNotifPanel)}
+                    className="relative p-3 bg-white/60 hover:bg-white border border-white shadow-sm rounded-2xl transition-all duration-300">
+                    <Bell size={20} className="text-slate-700" strokeWidth={2.5} />
+                    {notifications.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-md animate-pulse">
+                        {notifications.length}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifPanel && (
+                    <div className="absolute right-0 top-14 w-80 bg-white/90 backdrop-blur-xl rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-white z-50 overflow-hidden">
+                      <div className="px-5 py-4 bg-slate-900 flex items-center justify-between">
+                        <span className="text-white font-bold text-sm tracking-wide">{fr ? 'Notifications' : 'Notifications'}</span>
+                        {notifications.length > 0 && (
+                          <button onClick={() => setNotifications([])} className="text-white/60 hover:text-white text-xs font-bold transition-colors">
+                            {fr ? 'Tout effacer' : 'Clear all'}
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-72 overflow-y-auto p-2">
+                        {notifications.length > 0 ? notifications.map(n => (
+                          <div key={n.id} className="px-4 py-3 mb-1 rounded-2xl hover:bg-slate-100/80 transition-colors cursor-pointer"
+                            onClick={() => { setActiveTab('forms-project'); setShowNotifPanel(false); }}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 bg-blue-500 rounded-full flex-shrink-0 shadow-sm" />
+                              <p className="text-sm font-bold text-slate-800 truncate">{n.name}</p>
+                            </div>
+                            <p className="text-xs font-medium text-slate-500 mt-1 ml-4.5">{n.type} · {n.time}</p>
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5 ml-4">{n.type} · {n.time}</p>
-                        </div>
-                      )) : (
-                        <div className="px-4 py-8 text-center text-slate-400 text-sm">
-                          {fr ? 'Aucune notification' : 'No notifications'}
-                        </div>
-                      )}
+                        )) : (
+                          <div className="px-4 py-10 text-center font-medium text-slate-400 text-sm">
+                            {fr ? 'Aucune notification' : 'No notifications'}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+
+                {canEdit && ['portfolio-web', 'portfolio-graphic', 'portfolio-video'].includes(activeTab) && (
+                  <button onClick={openNewModal} className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-slate-900/20 hover:scale-105 transition-all">
+                    <Plus size={18} strokeWidth={3} />
+                    {fr ? 'Ajouter' : 'Add'}
+                  </button>
                 )}
               </div>
-
-              {canEdit && ['portfolio-web', 'portfolio-graphic', 'portfolio-video'].includes(activeTab) && (
-                <button onClick={openNewModal} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 transition-all hover:-translate-y-0.5 text-sm">
-                  <Plus size={18} />
-                  {fr ? 'Ajouter' : 'Add'}
-                </button>
-              )}
             </div>
+          </header>
+
+          <div className="flex-1 overflow-x-hidden overflow-y-auto px-10 pb-10 custom-scrollbar">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-900 border-t-transparent" />
+              </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+                {activeTab === 'dashboard' && <DashboardTab submissions={submissions} subscribers={subscribers} contestSubmissions={contestSubmissions} webProjects={webProjects} graphicProjects={graphicProjects} videos={videos} fr={fr} />}
+                {activeTab === 'forms-project' && <SubmissionsTab submissions={submissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateSubmissionStatus} deleteItem={canDelete ? (id: string) => deleteItem('project_submissions', id) : null} fr={fr} />}
+                {activeTab === 'forms-contest' && <ContestTab submissions={contestSubmissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateContestStatus} deleteItem={canDelete ? (id: string) => deleteItem('contest_submissions', id) : null} fr={fr} />}
+                {activeTab === 'forms-newsletter' && <NewsletterTab subscribers={subscribers} searchQuery={searchQuery} setSearchQuery={setSearchQuery} deleteItem={canDelete ? (id: string) => deleteItem('newsletter_subscribers', id) : null} deleteMultiple={canDelete ? (ids: string[]) => deleteMultiple('newsletter_subscribers', ids) : null} fr={fr} />}
+                {activeTab === 'portfolio-web' && <WebPortfolioTab projects={webProjects} onEdit={canEdit ? editWebProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
+                {activeTab === 'portfolio-graphic' && <GraphicPortfolioTab projects={graphicProjects} onEdit={canEdit ? editGraphicProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
+                {activeTab === 'portfolio-video' && <VideoPortfolioTab videos={videos} onEdit={canEdit ? editVideo : null} onDelete={canDelete ? (id: string) => deleteItem('video_portfolio', id) : null} onToggle={canEdit ? (v: any) => toggleVisibility('video_portfolio', v) : null} fr={fr} />}
+              </div>
+            )}
           </div>
-        </header>
-
-        <div className="p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
-            </div>
-          ) : (
-            <>
-              {activeTab === 'dashboard' && <DashboardTab submissions={submissions} subscribers={subscribers} contestSubmissions={contestSubmissions} webProjects={webProjects} graphicProjects={graphicProjects} videos={videos} fr={fr} />}
-              {activeTab === 'forms-project' && <SubmissionsTab submissions={submissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateSubmissionStatus} deleteItem={canDelete ? (id: string) => deleteItem('project_submissions', id) : null} fr={fr} />}
-              {activeTab === 'forms-contest' && <ContestTab submissions={contestSubmissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateContestStatus} deleteItem={canDelete ? (id: string) => deleteItem('contest_submissions', id) : null} fr={fr} />}
-              {activeTab === 'forms-newsletter' && <NewsletterTab subscribers={subscribers} searchQuery={searchQuery} setSearchQuery={setSearchQuery} fr={fr} />}
-              {activeTab === 'portfolio-web' && <WebPortfolioTab projects={webProjects} onEdit={canEdit ? editWebProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
-              {activeTab === 'portfolio-graphic' && <GraphicPortfolioTab projects={graphicProjects} onEdit={canEdit ? editGraphicProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
-              {activeTab === 'portfolio-video' && <VideoPortfolioTab videos={videos} onEdit={canEdit ? editVideo : null} onDelete={canDelete ? (id: string) => deleteItem('video_portfolio', id) : null} onToggle={canEdit ? (v: any) => toggleVisibility('video_portfolio', v) : null} fr={fr} />}
-            </>
-          )}
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* Modal */}
       {showModal && (
@@ -695,13 +736,13 @@ function DashboardTab({ submissions, subscribers, contestSubmissions = [], webPr
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {stats.map((s, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all">
-            <div className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ${s.color} mb-3`}>
+          <div key={i} className="bg-white/50 backdrop-blur-2xl rounded-[1.5rem] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:shadow-lg hover:border-white transition-all duration-300 hover:-translate-y-1">
+            <div className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ${s.color} mb-3 shadow-sm`}>
               <s.icon size={20} className="text-white" />
             </div>
-            <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-            <p className="text-sm text-slate-500 mt-0.5">{s.label}</p>
-            {s.newCount > 0 && <span className="inline-block mt-2 text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">{s.newCount} {fr ? 'nouveau(x)' : 'new'}</span>}
+            <p className="text-2xl font-black text-slate-900 tracking-tight">{s.value}</p>
+            <p className="text-sm font-bold text-slate-500 mt-0.5">{s.label}</p>
+            {s.newCount > 0 && <span className="inline-block mt-3 text-[10px] uppercase tracking-wider bg-slate-900 text-white font-black px-2 py-0.5 rounded-full">{s.newCount} {fr ? 'nouveau' : 'new'}</span>}
           </div>
         ))}
       </div>
@@ -709,9 +750,11 @@ function DashboardTab({ submissions, subscribers, contestSubmissions = [], webPr
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Bar Chart — 30 day trends */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <TrendingUp size={18} className="text-blue-600" />
+        <div className="lg:col-span-2 bg-white/50 backdrop-blur-2xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+          <h3 className="font-extrabold text-slate-900 mb-6 flex items-center gap-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <TrendingUp size={18} className="text-blue-600" strokeWidth={2.5} />
+            </div>
             {fr ? 'Demandes — 30 derniers jours' : 'Requests — Last 30 days'}
           </h3>
           <svg viewBox="0 0 600 180" className="w-full" preserveAspectRatio="xMidYMid meet">
@@ -720,13 +763,13 @@ function DashboardTab({ submissions, subscribers, contestSubmissions = [], webPr
               const x = i * 20;
               return (
                 <g key={i}>
-                  <rect x={x + 2} y={150 - barH} width={16} height={barH} rx={3}
-                    fill={d.count > 0 ? 'url(#barGrad)' : '#e2e8f0'} className="transition-all duration-300" />
+                  <rect x={x + 2} y={150 - barH} width={16} height={barH} rx={4}
+                    fill={d.count > 0 ? 'url(#barGrad)' : 'rgba(255,255,255,0.4)'} className="transition-all duration-300 hover:opacity-80" />
                   {i % 5 === 0 && (
-                    <text x={x + 10} y={170} textAnchor="middle" className="fill-slate-400" fontSize="9">{d.label}</text>
+                    <text x={x + 10} y={170} textAnchor="middle" className="fill-slate-500 font-bold" fontSize="9">{d.label}</text>
                   )}
                   {d.count > 0 && (
-                    <text x={x + 10} y={146 - barH} textAnchor="middle" className="fill-blue-600 font-bold" fontSize="9">{d.count}</text>
+                    <text x={x + 10} y={146 - barH} textAnchor="middle" className="fill-slate-800 font-black" fontSize="9">{d.count}</text>
                   )}
                 </g>
               );
@@ -734,21 +777,23 @@ function DashboardTab({ submissions, subscribers, contestSubmissions = [], webPr
             <defs>
               <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#6366f1" />
+                <stop offset="100%" stopColor="#8b5cf6" />
               </linearGradient>
             </defs>
           </svg>
         </div>
 
         {/* Donut Chart — Project type distribution */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <FolderOpen size={18} className="text-purple-600" />
+        <div className="bg-white/50 backdrop-blur-2xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+          <h3 className="font-extrabold text-slate-900 mb-6 flex items-center gap-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <FolderOpen size={18} className="text-purple-600" strokeWidth={2.5} />
+            </div>
             {fr ? 'Types de projets' : 'Project Types'}
           </h3>
           {donutTotal > 0 ? (
-            <div className="flex flex-col items-center gap-4">
-              <svg viewBox="0 0 120 120" className="w-32 h-32">
+            <div className="flex flex-col items-center gap-6">
+              <svg viewBox="0 0 120 120" className="w-32 h-32 drop-shadow-md">
                 {(() => {
                   let cumAngle = -90;
                   return donutData.map((d, i) => {
@@ -766,15 +811,15 @@ function DashboardTab({ submissions, subscribers, contestSubmissions = [], webPr
                     return <path key={i} d={path} fill={d.color} className="hover:opacity-80 transition-opacity cursor-pointer" />;
                   });
                 })()}
-                <text x="60" y="58" textAnchor="middle" className="fill-slate-900 font-bold" fontSize="18">{donutTotal}</text>
-                <text x="60" y="72" textAnchor="middle" className="fill-slate-500" fontSize="8">{fr ? 'demandes' : 'requests'}</text>
+                <text x="60" y="58" textAnchor="middle" className="fill-slate-900 font-black" fontSize="18">{donutTotal}</text>
+                <text x="60" y="72" textAnchor="middle" className="fill-slate-500 font-bold" fontSize="8">{fr ? 'demandes' : 'requests'}</text>
               </svg>
-              <div className="w-full space-y-1.5">
+              <div className="w-full space-y-2">
                 {donutData.map((d, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="flex-1 text-slate-600 truncate">{d.label}</span>
-                    <span className="font-semibold text-slate-900">{d.value}</span>
+                  <div key={i} className="flex items-center gap-3 text-sm p-1.5 rounded-lg hover:bg-white/40 transition-colors">
+                    <div className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: d.color }} />
+                    <span className="flex-1 text-slate-600 font-semibold truncate">{d.label}</span>
+                    <span className="font-extrabold text-slate-900">{d.value}</span>
                   </div>
                 ))}
               </div>
@@ -788,30 +833,34 @@ function DashboardTab({ submissions, subscribers, contestSubmissions = [], webPr
       {/* Row: Recent Activity Split */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Latest Requests */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <FileText size={18} className="text-blue-600" />
+        <div className="bg-white/50 backdrop-blur-2xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+          <h3 className="font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <FileText size={18} className="text-blue-600" strokeWidth={2.5} />
+            </div>
             {fr ? 'Dernières demandes projets' : 'Latest Project Requests'}
           </h3>
-          <div className="space-y-1">
+          <div className="space-y-2">
             {submissions.slice(0, 5).map((s: ProjectSubmission) => (
-              <div key={s.id} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors px-2 rounded-xl">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status === 'new' ? 'bg-blue-500' : s.status === 'read' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+              <div key={s.id} className="flex items-center gap-4 py-3 border-b border-white/30 last:border-0 hover:bg-white/60 transition-colors px-3 rounded-2xl cursor-pointer">
+                <div className={`w-3 h-3 rounded-full shadow-sm flex-shrink-0 ${s.status === 'new' ? 'bg-blue-500' : s.status === 'read' ? 'bg-amber-500' : 'bg-slate-300'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 text-sm truncate">{s.name}</p>
-                  <p className="text-xs text-slate-500 truncate">{s.project_type} — {s.email}</p>
+                  <p className="font-bold text-slate-900 text-sm truncate">{s.name}</p>
+                  <p className="text-xs font-semibold text-slate-500 truncate mt-0.5">{s.project_type} — {s.email}</p>
                 </div>
-                <span className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.created_at).toLocaleDateString()}</span>
+                <span className="text-xs font-bold text-slate-400 whitespace-nowrap bg-white/50 px-2 py-1 rounded-lg">{new Date(s.created_at).toLocaleDateString()}</span>
               </div>
             ))}
-            {!submissions.length && <p className="text-slate-400 text-center py-4">{fr ? 'Aucune demande' : 'No requests'}</p>}
+            {!submissions.length && <p className="text-slate-400 text-center py-4 font-medium">{fr ? 'Aucune demande' : 'No requests'}</p>}
           </div>
         </div>
 
         {/* Latest Contest Activity */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Trophy size={18} className="text-amber-500" />
+        <div className="bg-white/50 backdrop-blur-2xl rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+          <h3 className="font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <Trophy size={18} className="text-amber-500" strokeWidth={2.5} />
+            </div>
             {fr ? 'Derniers participants au Concours' : 'Latest Contest Participants'}
           </h3>
           <div className="space-y-1">
@@ -914,7 +963,7 @@ function SubmissionsTab({ submissions, searchQuery, setSearchQuery, updateStatus
           <FileSpreadsheet size={16} /> XLSX
         </button>
       </div>
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white/50 backdrop-blur-2xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="bg-slate-50 text-slate-600">
@@ -997,8 +1046,10 @@ function SubmissionsTab({ submissions, searchQuery, setSearchQuery, updateStatus
 }
 
 // --- Newsletter Tab ---
-function NewsletterTab({ subscribers, searchQuery, setSearchQuery, fr }: any) {
+function NewsletterTab({ subscribers, searchQuery, setSearchQuery, fr, deleteItem, deleteMultiple }: any) {
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  
   const filtered = subscribers.filter((s: NewsletterSubscriber) =>
     !searchQuery || [s.name, s.email].some(v => v?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -1009,6 +1060,10 @@ function NewsletterTab({ subscribers, searchQuery, setSearchQuery, fr }: any) {
     'Expire le': s.coupon_expires_at, 'Inscrit le': s.subscribed_at
   }));
 
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedIds(e.target.checked ? paged.map((s: NewsletterSubscriber) => s.id) : []);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-center">
@@ -1016,6 +1071,13 @@ function NewsletterTab({ subscribers, searchQuery, setSearchQuery, fr }: any) {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setPage(1); }} placeholder={fr ? 'Rechercher...' : 'Search...'} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
         </div>
+        
+        {deleteMultiple && selectedIds.length > 0 && (
+          <button onClick={() => { deleteMultiple(selectedIds); setSelectedIds([]); }} className="flex items-center gap-2 px-4 py-2.5 bg-red-100/50 text-red-600 border border-red-500/20 hover:bg-red-100 rounded-xl text-sm font-bold transition-all shadow-sm">
+            <Trash2 size={16} /> {fr ? `Supprimer (${selectedIds.length})` : `Delete (${selectedIds.length})`}
+          </button>
+        )}
+
         <button onClick={() => exportCSV(getExportData(), 'newsletter_inscrits')} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-sm font-medium transition-colors">
           <Download size={16} /> CSV
         </button>
@@ -1023,33 +1085,53 @@ function NewsletterTab({ subscribers, searchQuery, setSearchQuery, fr }: any) {
           <FileSpreadsheet size={16} /> XLSX
         </button>
       </div>
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white/50 backdrop-blur-2xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="bg-slate-50 text-slate-600">
-              <th className="px-4 py-3 text-left font-semibold">{fr ? 'Nom' : 'Name'}</th>
-              <th className="px-4 py-3 text-left font-semibold">Email</th>
-              <th className="px-4 py-3 text-left font-semibold">Coupon</th>
-              <th className="px-4 py-3 text-left font-semibold">{fr ? 'Utilisé' : 'Used'}</th>
-              <th className="px-4 py-3 text-left font-semibold">{fr ? 'Expire' : 'Expires'}</th>
-              <th className="px-4 py-3 text-left font-semibold">{fr ? 'Inscrit le' : 'Subscribed'}</th>
+            <thead><tr className="bg-white/40 text-slate-600 border-b border-white/40">
+              <th className="px-4 py-4 text-left w-12">
+                <input type="checkbox" className="rounded-md border-slate-300 w-4 h-4 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  checked={paged.length > 0 && selectedIds.length === paged.length}
+                  onChange={handleSelectAll}
+                />
+              </th>
+              <th className="px-4 py-4 text-left font-bold">{fr ? 'Nom' : 'Name'}</th>
+              <th className="px-4 py-4 text-left font-bold">Email</th>
+              <th className="px-4 py-4 text-left font-bold">Coupon</th>
+              <th className="px-4 py-4 text-left font-bold">{fr ? 'Utilisé' : 'Used'}</th>
+              <th className="px-4 py-4 text-left font-bold">{fr ? 'Expire' : 'Expires'}</th>
+              <th className="px-4 py-4 text-left font-bold">{fr ? 'Inscrit le' : 'Subscribed'}</th>
+              {deleteItem && <th className="px-4 py-4 text-left font-bold">Actions</th>}
             </tr></thead>
             <tbody>
               {paged.map((s: NewsletterSubscriber) => (
-                <tr key={s.id} className="border-t border-slate-50 hover:bg-slate-50/50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-slate-900">{s.name || '—'}</td>
-                  <td className="px-4 py-3 text-slate-600">{s.email}</td>
-                  <td className="px-4 py-3"><span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-mono font-semibold">{s.coupon_code}</span></td>
-                  <td className="px-4 py-3">{s.coupon_used ? <span className="text-emerald-600 font-semibold">✓</span> : <span className="text-slate-300">✗</span>}</td>
-                  <td className="px-4 py-3 text-slate-500 text-xs">{new Date(s.coupon_expires_at).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-slate-500 text-xs">{new Date(s.subscribed_at).toLocaleDateString()}</td>
+                <tr key={s.id} className="border-b border-white/30 hover:bg-white/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <input type="checkbox" className="rounded-md border-slate-300 w-4 h-4 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                      checked={selectedIds.includes(s.id)}
+                      onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
+                    />
+                  </td>
+                  <td className="px-4 py-3 font-bold text-slate-900">{s.name || '—'}</td>
+                  <td className="px-4 py-3 text-slate-600 font-medium">{s.email}</td>
+                  <td className="px-4 py-3"><span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-mono font-bold shadow-sm">{s.coupon_code}</span></td>
+                  <td className="px-4 py-3">{s.coupon_used ? <span className="text-emerald-600 font-bold bg-emerald-100 px-2 py-0.5 rounded-lg">✓</span> : <span className="text-slate-400 font-bold px-2 py-0.5">✗</span>}</td>
+                  <td className="px-4 py-3 text-slate-500 text-xs font-medium">{new Date(s.coupon_expires_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-slate-500 text-xs font-medium">{new Date(s.subscribed_at).toLocaleDateString()}</td>
+                  {deleteItem && (
+                    <td className="px-4 py-3">
+                      <button onClick={() => deleteItem(s.id)} className="p-2 text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-colors" title={fr ? 'Supprimer' : 'Delete'}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
-              {!filtered.length && <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">{fr ? 'Aucun inscrit' : 'No subscribers'}</td></tr>}
+              {!filtered.length && <tr><td colSpan={deleteItem ? 8 : 7} className="px-4 py-12 text-center font-medium text-slate-500">{fr ? 'Aucun inscrit' : 'No subscribers'}</td></tr>}
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-3 border-t border-slate-100">
+        <div className="px-4 py-3 border-t border-white/40">
           <Pagination total={filtered.length} page={page} setPage={setPage} fr={fr} />
         </div>
       </div>
