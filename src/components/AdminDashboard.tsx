@@ -8,7 +8,8 @@ import {
   TrendingUp, FolderOpen, Play
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { supabase, PortfolioProject, ProjectSubmission, NewsletterSubscriber, VideoPortfolio, ContestSubmission } from '../lib/supabase';
+import { toast } from 'react-hot-toast';
+import { supabase, PortfolioProject, ProjectSubmission, NewsletterSubscriber, VideoPortfolio, ContestSubmission, SITE_SETTING_CONTEST_DEADLINE, DEFAULT_CONTEST_DEADLINE } from '../lib/supabase';
 import { Language } from '../translations';
 import { ImageUploader, MultiImageUploader } from './ImageUploader';
 import { ConfirmModal } from './ConfirmModal';
@@ -60,6 +61,7 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   const [graphicProjects, setGraphicProjects] = useState<PortfolioProject[]>([]);
   const [videos, setVideos] = useState<VideoPortfolio[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contestDeadline, setContestDeadline] = useState(DEFAULT_CONTEST_DEADLINE);
   const [userRole, setUserRole] = useState<'super_admin' | 'editor' | 'viewer'>('editor');
   const canEdit = userRole !== 'viewer';
   const canDelete = userRole === 'super_admin';
@@ -148,17 +150,20 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [subRes, newsRes, contestRes, webRes, gfxRes, vidRes] = await Promise.all([
+      const [subRes, newsRes, contestRes, webRes, gfxRes, vidRes, deadlineRes] = await Promise.all([
         supabase.from('project_submissions').select('*').order('created_at', { ascending: false }),
         supabase.from('newsletter_subscribers').select('*').order('subscribed_at', { ascending: false }),
         supabase.from('contest_submissions').select('*').order('created_at', { ascending: false }),
         supabase.from('portfolio_projects').select('*').eq('portfolio_type', 'web_app').order('order_index'),
         supabase.from('portfolio_projects').select('*').eq('portfolio_type', 'graphic_design').order('order_index'),
         supabase.from('video_portfolio').select('*').order('order_index'),
+        supabase.from('site_settings').select('value').eq('key', SITE_SETTING_CONTEST_DEADLINE).maybeSingle(),
       ]);
       setSubmissions(subRes.data || []);
       setSubscribers(newsRes.data || []);
       setContestSubmissions(contestRes.data || []);
+      if (deadlineRes.data?.value) setContestDeadline(deadlineRes.data.value);
+      else if (!deadlineRes.error) setContestDeadline(DEFAULT_CONTEST_DEADLINE);
       setWebProjects(webRes.data || []);
       setGraphicProjects(gfxRes.data || []);
       setVideos(vidRes.data || []);
@@ -300,6 +305,22 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
   const updateContestStatus = async (id: string, status: string) => {
     await supabase.from('contest_submissions').update({ status }).eq('id', id);
     fetchAll();
+  };
+
+  const saveContestDeadline = async () => {
+    if (!canEdit) return;
+    try {
+      const { error } = await supabase.from('site_settings').upsert(
+        { key: SITE_SETTING_CONTEST_DEADLINE, value: contestDeadline },
+        { onConflict: 'key' }
+      );
+      if (error) throw error;
+      toast.success(fr ? 'Date de clôture enregistrée.' : 'Closing date saved.');
+      fetchAll();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(msg || (fr ? 'Erreur lors de l\'enregistrement.' : 'Save failed.'));
+    }
   };
 
   // --- Edit handlers ---
@@ -480,7 +501,20 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
                 {activeTab === 'dashboard' && <DashboardTab submissions={submissions} subscribers={subscribers} contestSubmissions={contestSubmissions} webProjects={webProjects} graphicProjects={graphicProjects} videos={videos} fr={fr} />}
                 {activeTab === 'forms-project' && <SubmissionsTab submissions={submissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateSubmissionStatus} deleteItem={canDelete ? (id: string) => deleteItem('project_submissions', id) : null} fr={fr} />}
-                {activeTab === 'forms-contest' && <ContestTab submissions={contestSubmissions} searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateStatus={updateContestStatus} deleteItem={canDelete ? (id: string) => deleteItem('contest_submissions', id) : null} fr={fr} />}
+                {activeTab === 'forms-contest' && (
+                  <ContestTab
+                    submissions={contestSubmissions}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    updateStatus={updateContestStatus}
+                    deleteItem={canDelete ? (id: string) => deleteItem('contest_submissions', id) : null}
+                    fr={fr}
+                    contestDeadline={contestDeadline}
+                    setContestDeadline={setContestDeadline}
+                    onSaveContestDeadline={saveContestDeadline}
+                    canEdit={canEdit}
+                  />
+                )}
                 {activeTab === 'forms-newsletter' && <NewsletterTab subscribers={subscribers} searchQuery={searchQuery} setSearchQuery={setSearchQuery} deleteItem={canDelete ? (id: string) => deleteItem('newsletter_subscribers', id) : null} deleteMultiple={canDelete ? (ids: string[]) => deleteMultiple('newsletter_subscribers', ids) : null} fr={fr} />}
                 {activeTab === 'portfolio-web' && <WebPortfolioTab projects={webProjects} onEdit={canEdit ? editWebProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
                 {activeTab === 'portfolio-graphic' && <GraphicPortfolioTab projects={graphicProjects} onEdit={canEdit ? editGraphicProject : null} onDelete={canDelete ? (id: string) => deleteItem('portfolio_projects', id) : null} onToggle={canEdit ? (p: any) => toggleVisibility('portfolio_projects', p) : null} fr={fr} />}
@@ -529,7 +563,18 @@ export function AdminDashboard({ onLogout, language }: AdminDashboardProps) {
 }
 
 // --- Contest Tab ---
-function ContestTab({ submissions, searchQuery, setSearchQuery, updateStatus, deleteItem, fr }: any) {
+function ContestTab({
+  submissions,
+  searchQuery,
+  setSearchQuery,
+  updateStatus,
+  deleteItem,
+  fr,
+  contestDeadline,
+  setContestDeadline,
+  onSaveContestDeadline,
+  canEdit,
+}: any) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const filtered = submissions.filter((s: ContestSubmission) =>
@@ -553,6 +598,38 @@ function ContestTab({ submissions, searchQuery, setSearchQuery, updateStatus, de
 
   return (
     <div className="space-y-4">
+      <div className="bg-white/80 backdrop-blur rounded-2xl border border-amber-200/60 shadow-sm p-5 flex flex-col sm:flex-row sm:items-end gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-amber-800/80 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <Calendar size={14} className="text-amber-600" />
+            {fr ? 'Date affichée sur la page Concours' : 'Date shown on Contest page'}
+          </p>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            {fr ? 'Clôture des inscriptions' : 'Registration closing date'}
+          </label>
+          <input
+            type="date"
+            value={contestDeadline}
+            onChange={e => setContestDeadline(e.target.value)}
+            disabled={!canEdit}
+            className="w-full max-w-xs px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+          />
+          <p className="text-xs text-slate-500 mt-2">
+            {fr ? 'Choisis une date passée ou future ; elle apparaît sur /contest pour les visiteurs.' : 'Pick a past or future date; visitors see it on /contest.'}
+          </p>
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => onSaveContestDeadline()}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl text-sm font-bold shadow-md shadow-amber-500/25 hover:opacity-95 transition-opacity shrink-0"
+          >
+            <Save size={18} />
+            {fr ? 'Enregistrer la date' : 'Save date'}
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[240px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

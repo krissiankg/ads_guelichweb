@@ -3,24 +3,43 @@
 -- Instructions: Copy and paste this code into your Supabase SQL Editor and hit "Run".
 -- ============================================================================
 
+CREATE TABLE IF NOT EXISTS public.site_settings (
+  key text PRIMARY KEY,
+  value text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO public.site_settings (key, value) VALUES ('contest_deadline', '2026-04-17') ON CONFLICT (key) DO NOTHING;
+
 -- 1. Enable RLS on all relevant tables
 ALTER TABLE public.project_submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contest_submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.portfolio_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.video_portfolio ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
--- 2. Drop existing policies (to avoid conflicts if re-running)
+-- 2. Drop existing policies (legacy names + current names, so the script is safe to re-run)
+-- Legacy
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.portfolio_projects;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.video_portfolio;
-DROP POLICY IF EXISTS "Public can insert project_submissions" ON public.project_submissions;
-DROP POLICY IF EXISTS "Public can insert contest_submissions" ON public.contest_submissions;
-DROP POLICY IF EXISTS "Public can insert newsletter_subscribers" ON public.newsletter_subscribers;
 DROP POLICY IF EXISTS "Admins can do everything on project_submissions" ON public.project_submissions;
 DROP POLICY IF EXISTS "Admins can do everything on contest_submissions" ON public.contest_submissions;
 DROP POLICY IF EXISTS "Admins can do everything on newsletter_subscribers" ON public.newsletter_subscribers;
 DROP POLICY IF EXISTS "Admins can do everything on portfolio_projects" ON public.portfolio_projects;
 DROP POLICY IF EXISTS "Admins can do everything on video_portfolio" ON public.video_portfolio;
+-- Current policy names (must be dropped before CREATE on re-execution)
+DROP POLICY IF EXISTS "Public can read portfolio_projects" ON public.portfolio_projects;
+DROP POLICY IF EXISTS "Public can read video_portfolio" ON public.video_portfolio;
+DROP POLICY IF EXISTS "Public can read site_settings" ON public.site_settings;
+DROP POLICY IF EXISTS "Public can insert project_submissions" ON public.project_submissions;
+DROP POLICY IF EXISTS "Public can insert contest_submissions" ON public.contest_submissions;
+DROP POLICY IF EXISTS "Public can insert newsletter_subscribers" ON public.newsletter_subscribers;
+DROP POLICY IF EXISTS "Admins have full access to project_submissions" ON public.project_submissions;
+DROP POLICY IF EXISTS "Admins have full access to contest_submissions" ON public.contest_submissions;
+DROP POLICY IF EXISTS "Admins have full access to newsletter_subscribers" ON public.newsletter_subscribers;
+DROP POLICY IF EXISTS "Admins have full access to portfolio_projects" ON public.portfolio_projects;
+DROP POLICY IF EXISTS "Admins have full access to video_portfolio" ON public.video_portfolio;
+DROP POLICY IF EXISTS "Authenticated users can manage site_settings" ON public.site_settings;
 
 -- 3. Public access policies (ANONYMOUS USERS)
 -- Le public a seulement le droit de VOIR le portfolio, et d'INSÉRER (créer) dans les formulaires.
@@ -29,6 +48,10 @@ CREATE POLICY "Public can read portfolio_projects"
 
 CREATE POLICY "Public can read video_portfolio"
   ON public.video_portfolio FOR SELECT USING (true);
+
+CREATE POLICY "Public can read site_settings"
+  ON public.site_settings FOR SELECT
+  USING (true);
 
 CREATE POLICY "Public can insert project_submissions" 
   ON public.project_submissions FOR INSERT WITH CHECK (true);
@@ -55,3 +78,8 @@ CREATE POLICY "Admins have full access to portfolio_projects"
 
 CREATE POLICY "Admins have full access to video_portfolio" 
   ON public.video_portfolio FOR ALL USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can manage site_settings"
+  ON public.site_settings FOR ALL
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');

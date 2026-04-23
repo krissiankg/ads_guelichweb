@@ -11,6 +11,10 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+/** `site_settings.key` for the closing date shown on `/contest` (value: `YYYY-MM-DD`) */
+export const SITE_SETTING_CONTEST_DEADLINE = 'contest_deadline';
+export const DEFAULT_CONTEST_DEADLINE = '2026-04-17';
+
 export interface PortfolioProject {
   id: string;
   title: string;

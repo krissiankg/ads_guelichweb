@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Check, 
   Sparkles, 
@@ -14,7 +14,7 @@ import {
   Phone,
   ArrowLeft
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, SITE_SETTING_CONTEST_DEADLINE, DEFAULT_CONTEST_DEADLINE } from '../lib/supabase';
 import { Language, getTranslation } from '../translations';
 import { toast } from 'react-hot-toast';
 
@@ -42,6 +42,33 @@ export const ContestPage: React.FC<ContestPageProps> = ({ language, onClose }) =
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const [contestDeadlineIso, setContestDeadlineIso] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', SITE_SETTING_CONTEST_DEADLINE)
+        .maybeSingle();
+      if (!cancelled && data?.value) setContestDeadlineIso(data.value);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const formattedClosingDate = useMemo(() => {
+    const raw = contestDeadlineIso ?? DEFAULT_CONTEST_DEADLINE;
+    const d = new Date(`${raw}T12:00:00`);
+    if (Number.isNaN(d.getTime())) {
+      return t.contest.deadline.split(':').pop()?.trim() ?? raw;
+    }
+    return d.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }, [contestDeadlineIso, language, t.contest.deadline]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -223,7 +250,7 @@ export const ContestPage: React.FC<ContestPageProps> = ({ language, onClose }) =
                     <div className="text-right">
                       <div className="flex items-center text-orange-600 font-bold">
                         <Calendar size={18} className="mr-2" />
-                        <span>{t.contest.deadline.split(':').pop()}</span>
+                        <span>{t.contest.deadlinePrefix} {formattedClosingDate}</span>
                       </div>
                     </div>
                   </div>
