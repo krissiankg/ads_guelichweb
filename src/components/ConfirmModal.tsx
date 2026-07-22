@@ -1,4 +1,4 @@
-import { X, AlertTriangle, AlertCircle, Check } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Check } from 'lucide-react';
 import { Language } from '../translations';
 
 interface ConfirmModalProps {

@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import { X, ExternalLink, Play, Image as ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, Globe, Palette, Video, Maximize2 } from 'lucide-react';
-import { supabase, PortfolioProject, VideoPortfolio } from '../lib/supabase';
-import { Language } from '../translations';
+import { supabase, PortfolioProject, VideoPortfolio } from '../../lib/supabase';
+import { Language } from '../../translations';
 
-interface PortfolioModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface PortfolioContentProps {
   language: Language;
 }
 
 type PortfolioTab = 'web' | 'graphic' | 'video';
 
-export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProps) {
+export function PortfolioContent({ language }: PortfolioContentProps) {
   const fr = language === 'fr';
   const [activeTab, setActiveTab] = useState<PortfolioTab>('web');
   const [webProjects, setWebProjects] = useState<PortfolioProject[]>([]);
@@ -29,20 +27,92 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
-    if (isOpen) fetchAll();
-  }, [isOpen]);
+    fetchAll();
+  }, []);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [webRes, gfxRes, vidRes] = await Promise.all([
+      const [webRes, graphicRes, videoRes] = await Promise.all([
         supabase.from('portfolio_projects').select('*').eq('portfolio_type', 'web_app').eq('is_visible', true).order('order_index'),
         supabase.from('portfolio_projects').select('*').eq('portfolio_type', 'graphic_design').eq('is_visible', true).order('order_index'),
-        supabase.from('video_portfolio').select('*').eq('is_visible', true).order('order_index'),
+        supabase.from('video_portfolio').select('*').eq('is_visible', true).order('order_index')
       ]);
-      setWebProjects(webRes.data || []);
-      setGraphicProjects(gfxRes.data || []);
-      setVideos(vidRes.data || []);
+
+      let webData = webRes.data || [];
+      
+      const buscordProject: PortfolioProject = {
+        id: 'mock-buscord-online',
+        title: 'BUSCORD — Bureau d\'Études & Contrôle',
+        category: 'Site Web Institutionnel',
+        thumbnail_url: '/portfolio/buscord.png',
+        project_url: 'https://buscord.online/',
+        description: 'Plateforme web institutionnelle du Bureau de Suivi-Contrôle et de Réalisation pour le Développement au Burkina Faso.',
+        summary: 'Conception et réalisation d\'une vitrine digitale haut de gamme pour BUSCORD, partenaire clé des bailleurs de fonds, ONG et institutions internationales dans l\'humanitaire et le BTP.',
+        features: [
+          'Présentation des domaines d\'intervention (Suivi-contrôle, BTP, Intermédiation sociale)',
+          'Showcase des réalisations (Écoles, Forages, Lycées)',
+          'Indicateurs d\'impact dynamique & métriques (7+ projets, 440M+ FCFA)',
+          'UX/UI responsive moderne (Glassmorphism & typographie soignée)',
+          'Formulaire de contact & d\'interaction bailleurs'
+        ],
+        technologies: ['React', 'Next.js', 'Tailwind CSS', 'TypeScript'],
+        images: ['/portfolio/buscord.png', '/portfolio/buscord-hero.jpg'],
+        objectifs: 'Valoriser l\'expertise terrain et les 15+ années d\'expérience de BUSCORD auprès des partenaires internationaux et bailleurs humanitaires.',
+        order_index: -3,
+        is_featured: true,
+        is_visible: true,
+        portfolio_type: 'web_app',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const spassMitDeutschProject: PortfolioProject = {
+        id: 'mock-spass-mit-deutsch',
+        title: 'Spass mit Deutsch Benin',
+        category: 'Plateforme Web / App',
+        thumbnail_url: '/portfolio/spass-mit-deutsch.png',
+        project_url: 'https://platform.spassmitdeutschbenin.com/',
+        description: 'Plateforme officielle de consultation des résultats d\'examen pour le centre de formation Spass mit Deutsch au Bénin.',
+        summary: 'Système complet de gestion et de consultation de résultats en ligne avec une interface moderne et sécurisée.',
+        features: ['Consultation des résultats', 'Téléchargement de certificats PDF', 'Design responsive', 'Espace administrateur sécurisé', 'Support multilingue'],
+        technologies: ['React', 'Next.js', 'Tailwind CSS', 'TypeScript'],
+        images: ['/portfolio/spass-mit-deutsch.png'],
+        objectifs: 'Digitaliser le processus d\'annonce des résultats pour le centre de formation en allemand et permettre un accès rapide et sécurisé aux apprenants.',
+        order_index: -1,
+        is_featured: true,
+        is_visible: true,
+        portfolio_type: 'web_app',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      const snbProject: PortfolioProject = {
+        id: 'mock-snb-benin',
+        title: 'Société de Nutrition du Bénin (SNB)',
+        category: 'Site Web Institutionnel',
+        thumbnail_url: '/portfolio/snb-bj.png',
+        project_url: 'https://snb.bj/',
+        description: 'Site web officiel de la Société de Nutrition du Bénin, une association scientifique et professionnelle.',
+        summary: 'Refonte complète avec les nouvelles technologies pour l\'association œuvrant pour une alimentation saine, la santé et le développement durable au Bénin.',
+        features: ['Présentation de l\'association', 'Actualités et événements', 'Ressources scientifiques', 'Espace membres'],
+        technologies: ['React', 'Vite', 'Tailwind CSS', 'TypeScript'],
+        images: ['/portfolio/snb-bj.png'],
+        objectifs: 'Moderniser la présence en ligne de la SNB et offrir une plateforme performante pour la diffusion des connaissances en nutrition.',
+        order_index: -2,
+        is_featured: true,
+        is_visible: true,
+        portfolio_type: 'web_app',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      // Remove duplicates if present in Supabase
+      webData = webData.filter(p => !p.title.toLowerCase().includes('snb') && !p.title.toLowerCase().includes('nutrition') && !p.title.toLowerCase().includes('buscord'));
+
+      webData = [buscordProject, snbProject, spassMitDeutschProject, ...webData];
+      setWebProjects(webData);
+      setGraphicProjects(graphicRes.data || []);
+      setVideos(videoRes.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -65,32 +135,13 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
     setLightboxImage(null);
   };
 
-  if (!isOpen) return null;
-
   return (
     <>
-      {/* Main Modal */}
-      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-3xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-        <AnimatedBackground />
-        <div className="bg-white rounded-3xl max-w-7xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
-          {/* Header */}
-          <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 flex justify-between items-center z-10">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-1">
-                {fr ? 'Portfolio GUELICHWEB' : 'GUELICHWEB Portfolio'}
-              </h2>
-              <p className="text-blue-100">
-                {fr ? 'Découvrez nos réalisations' : 'Discover our work'}
-              </p>
-            </div>
-            <button onClick={onClose} className="p-3 hover:bg-white/20 rounded-xl transition-colors">
-              <X className="text-white" size={28} />
-            </button>
-          </div>
-
-          {/* Portfolio Type Tabs */}
-          <div className="px-8 py-4 border-b border-slate-200 bg-slate-50">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      {/* Main Content */}
+      <div className="w-full mt-12">
+        {/* Portfolio Type Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 px-2">
               {tabs.map(tab => (
                 <button
                   key={tab.id}
@@ -108,21 +159,21 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-8">
+        {/* Content Area */}
+        <div className="w-full">
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent" />
               </div>
             ) : (
               <>
-                {/* ========== WEB/APP TAB ========== */}
+                {/* WEB/APP TAB */}
                 {activeTab === 'web' && (
                   <>
-                    {/* Category filters */}
                     {webCategories.length > 2 && (
-                      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+                      <div className="flex items-center justify-center gap-2 mb-12 overflow-x-auto pb-2 px-2">
                         {webCategories.map(cat => (
                           <button
                             key={cat}
@@ -165,7 +216,7 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
                         </div>
                       ))}
                     </div>
-                    {filteredWebProjects.length === 0 && <EmptyState fr={fr} text={fr ? 'Aucun projet web/app' : 'No web/app projects'} />}
+                    {filteredWebProjects.length === 0 && <EmptyState text={fr ? 'Aucun projet web/app' : 'No web/app projects'} />}
                   </>
                 )}
 
@@ -209,7 +260,7 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
                         </div>
                       </div>
                     ))}
-                    {graphicProjects.length === 0 && <EmptyState fr={fr} text={fr ? 'Aucun design graphique' : 'No graphic designs'} />}
+                    {graphicProjects.length === 0 && <EmptyState text={fr ? 'Aucun design graphique' : 'No graphic designs'} />}
                   </div>
                 )}
 
@@ -240,15 +291,12 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
                         </div>
                       </div>
                     ))}
-                    {videos.length === 0 && <EmptyState fr={fr} text={fr ? 'Aucune vidéo' : 'No videos'} />}
+                    {videos.length === 0 && <EmptyState text={fr ? 'Aucune vidéo' : 'No videos'} />}
                   </div>
                 )}
               </>
             )}
           </div>
-        </div>
-      </div>
-
       {/* ========== WEB PROJECT DETAIL OVERLAY ========== */}
       {selectedProject && <ProjectDetailOverlay project={selectedProject} fr={fr} currentImageIndex={currentImageIndex} setCurrentImageIndex={setCurrentImageIndex} onClose={closeDetail} />}
 
@@ -273,7 +321,7 @@ export function PortfolioModal({ isOpen, onClose, language }: PortfolioModalProp
 // SUB-COMPONENTS
 // =======================================================================
 
-function EmptyState({ fr, text }: { fr: boolean; text: string }) {
+function EmptyState({ text }: { text: string }) {
   return (
     <div className="text-center py-16 col-span-full">
       <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 mb-4">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Lock, Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { getTranslation, Language } from '../translations';
+import { Language } from '../translations';
 
 interface AdminLoginProps {
   onLoginSuccess: () => void;
@@ -85,7 +85,6 @@ export function AdminLogin({ onLoginSuccess, language }: AdminLoginProps) {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const t = getTranslation(language);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
