@@ -39,78 +39,7 @@ export function PortfolioContent({ language }: PortfolioContentProps) {
         supabase.from('video_portfolio').select('*').eq('is_visible', true).order('order_index')
       ]);
 
-      let webData = webRes.data || [];
-      
-      const buscordProject: PortfolioProject = {
-        id: 'mock-buscord-online',
-        title: 'BUSCORD — Bureau d\'Études & Contrôle',
-        category: 'Site Web Institutionnel',
-        thumbnail_url: '/portfolio/buscord.png',
-        project_url: 'https://buscord.online/',
-        description: 'Plateforme web institutionnelle du Bureau de Suivi-Contrôle et de Réalisation pour le Développement au Burkina Faso.',
-        summary: 'Conception et réalisation d\'une vitrine digitale haut de gamme pour BUSCORD, partenaire clé des bailleurs de fonds, ONG et institutions internationales dans l\'humanitaire et le BTP.',
-        features: [
-          'Présentation des domaines d\'intervention (Suivi-contrôle, BTP, Intermédiation sociale)',
-          'Showcase des réalisations (Écoles, Forages, Lycées)',
-          'Indicateurs d\'impact dynamique & métriques (7+ projets, 440M+ FCFA)',
-          'UX/UI responsive moderne (Glassmorphism & typographie soignée)',
-          'Formulaire de contact & d\'interaction bailleurs'
-        ],
-        technologies: ['React', 'Next.js', 'Tailwind CSS', 'TypeScript'],
-        images: ['/portfolio/buscord.png', '/portfolio/buscord-hero.jpg'],
-        objectifs: 'Valoriser l\'expertise terrain et les 15+ années d\'expérience de BUSCORD auprès des partenaires internationaux et bailleurs humanitaires.',
-        order_index: -3,
-        is_featured: true,
-        is_visible: true,
-        portfolio_type: 'web_app',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      const spassMitDeutschProject: PortfolioProject = {
-        id: 'mock-spass-mit-deutsch',
-        title: 'Spass mit Deutsch Benin',
-        category: 'Plateforme Web / App',
-        thumbnail_url: '/portfolio/spass-mit-deutsch.png',
-        project_url: 'https://platform.spassmitdeutschbenin.com/',
-        description: 'Plateforme officielle de consultation des résultats d\'examen pour le centre de formation Spass mit Deutsch au Bénin.',
-        summary: 'Système complet de gestion et de consultation de résultats en ligne avec une interface moderne et sécurisée.',
-        features: ['Consultation des résultats', 'Téléchargement de certificats PDF', 'Design responsive', 'Espace administrateur sécurisé', 'Support multilingue'],
-        technologies: ['React', 'Next.js', 'Tailwind CSS', 'TypeScript'],
-        images: ['/portfolio/spass-mit-deutsch.png'],
-        objectifs: 'Digitaliser le processus d\'annonce des résultats pour le centre de formation en allemand et permettre un accès rapide et sécurisé aux apprenants.',
-        order_index: -1,
-        is_featured: true,
-        is_visible: true,
-        portfolio_type: 'web_app',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      const snbProject: PortfolioProject = {
-        id: 'mock-snb-benin',
-        title: 'Société de Nutrition du Bénin (SNB)',
-        category: 'Site Web Institutionnel',
-        thumbnail_url: '/portfolio/snb-bj.png',
-        project_url: 'https://snb.bj/',
-        description: 'Site web officiel de la Société de Nutrition du Bénin, une association scientifique et professionnelle.',
-        summary: 'Refonte complète avec les nouvelles technologies pour l\'association œuvrant pour une alimentation saine, la santé et le développement durable au Bénin.',
-        features: ['Présentation de l\'association', 'Actualités et événements', 'Ressources scientifiques', 'Espace membres'],
-        technologies: ['React', 'Vite', 'Tailwind CSS', 'TypeScript'],
-        images: ['/portfolio/snb-bj.png'],
-        objectifs: 'Moderniser la présence en ligne de la SNB et offrir une plateforme performante pour la diffusion des connaissances en nutrition.',
-        order_index: -2,
-        is_featured: true,
-        is_visible: true,
-        portfolio_type: 'web_app',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      // Remove duplicates if present in Supabase
-      webData = webData.filter(p => !p.title.toLowerCase().includes('snb') && !p.title.toLowerCase().includes('nutrition') && !p.title.toLowerCase().includes('buscord'));
-
-      webData = [buscordProject, snbProject, spassMitDeutschProject, ...webData];
-      setWebProjects(webData);
+      setWebProjects(webRes.data || []);
       setGraphicProjects(graphicRes.data || []);
       setVideos(videoRes.data || []);
     } catch (e) { console.error(e); }
