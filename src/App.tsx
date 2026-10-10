@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { X, Gift } from 'lucide-react';
 import { getTranslation, Language } from './translations';
 
 import { ConfirmModal } from './components/ConfirmModal';
-import { AdminLogin } from './components/AdminLogin';
-import { AdminDashboard } from './components/AdminDashboard';
 import { ContestPage } from './components/ContestPage';
 import { supabase } from './lib/supabase';
 import { Toaster, toast } from 'react-hot-toast';
@@ -18,6 +16,11 @@ import { PortfolioSection } from './components/sections/PortfolioSection';
 import { ProjectFormSection } from './components/sections/ProjectFormSection';
 import { NewsletterSection } from './components/sections/NewsletterSection';
 import { ContactSection } from './components/sections/ContactSection';
+
+// Admin screens (and the Excel export library they use) are only downloaded on /admin,
+// so visitors of the public site get a much smaller bundle.
+const AdminLogin = lazy(() => import('./components/AdminLogin').then((m) => ({ default: m.AdminLogin })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 
 function App() {
   const [language, setLanguage] = useState<Language>('fr');
@@ -134,33 +137,38 @@ function App() {
     document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const adminLoader = (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+        <p className="text-white text-lg">Loading...</p>
+      </div>
+    </div>
+  );
+
   // Only show full page loader if we are explicitly trying to access the admin area
   if (checkingAuth && isAdminRoute) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading...</p>
-        </div>
-      </div>
-    );
+    return adminLoader;
   }
 
   if (isAdminRoute) {
-    if (isPasswordRecovery || !isAdminAuthenticated) {
-      return (
-        <AdminLogin
-          onLoginSuccess={() => {
-            setIsPasswordRecovery(false);
-            setIsAdminAuthenticated(true);
-          }}
-          language={language}
-          isPasswordRecovery={isPasswordRecovery}
-          onPasswordUpdated={() => setIsPasswordRecovery(false)}
-        />
-      );
-    }
-    return <AdminDashboard onLogout={() => setIsAdminAuthenticated(false)} language={language} />;
+    return (
+      <Suspense fallback={adminLoader}>
+        {isPasswordRecovery || !isAdminAuthenticated ? (
+          <AdminLogin
+            onLoginSuccess={() => {
+              setIsPasswordRecovery(false);
+              setIsAdminAuthenticated(true);
+            }}
+            language={language}
+            isPasswordRecovery={isPasswordRecovery}
+            onPasswordUpdated={() => setIsPasswordRecovery(false)}
+          />
+        ) : (
+          <AdminDashboard onLogout={() => setIsAdminAuthenticated(false)} language={language} />
+        )}
+      </Suspense>
+    );
   }
 
   return (
