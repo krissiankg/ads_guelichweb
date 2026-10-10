@@ -7,19 +7,14 @@ Ce document résume les étapes à suivre pour mettre à jour votre site et vos 
 ## 1. Mettre à jour le Site Web (Interface & Design)
 *À faire quand vous modifiez : le design, les textes, le logo, ou le code React (`src/`).*
 
-1.  **Ouvrez votre terminal** (VS Code ou PowerShell).
-2.  **Lancez la construction du site** :
-    ```powershell
-    npm run build
-    ```
-    ✅ *Cela va créer un dossier `dist` optimisé pour la production.*
+Le site est hébergé sur **Vercel**, qui le met en ligne **automatiquement** :
 
-3.  **Mettez en ligne sur cPanel** :
-    -   Connectez-vous à votre **Gestionnaire de fichiers cPanel**.
-    -   Allez dans le dossier `public_html` (ou le dossier racine de votre sous-domaine `offre`).
-    -   **Supprimez** tout le contenu existant.
-    -   **Uploadez** tout le contenu qui se trouve dans votre dossier local `dist`.
-    -   **Outils > Décompresser** si vous avez uploadé un ZIP.
+1.  **Envoyez vos modifications sur GitHub** : fusionnez une Pull Request dans `main` (ou poussez directement sur `main`).
+2.  **Vercel construit et publie le site** en 1 à 2 minutes sur [offre.guelichweb.online](https://offre.guelichweb.online). Rien d'autre à faire.
+
+-   Chaque Pull Request reçoit aussi une **adresse d'aperçu** (commentaire du bot Vercel sur la PR) pour tester avant de fusionner.
+-   GitHub Actions vérifie le code à chaque Pull Request (types, tests, build).
+-   Les variables du site (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) se règlent dans **Vercel → Project → Settings → Environment Variables**.
 
 ---
 
@@ -44,7 +39,18 @@ Ce document résume les étapes à suivre pour mettre à jour votre site et vos 
 
 ---
 
-## 3. En cas de problème
+## 3. Mettre à jour la sécurité de la Base de Données
+*À faire quand `supabase/security_rls_policies.sql` change.*
+
+1.  Ouvrez **Supabase → SQL Editor**.
+2.  Collez tout le contenu de `supabase/security_rls_policies.sql` et cliquez sur **Run**.
+3.  Le tableau affiché à la fin doit montrer **deux règles par table** : une pour le public, une pour les admins.
+
+✅ *Le script peut être relancé sans risque. Faites cette étape **avant** de redéployer les fonctions (étape 2) si les deux ont changé.*
+
+---
+
+## 4. En cas de problème
 
 -   **Les emails ne partent pas ?**
     Vérifiez que vous avez bien relancé l'étape 2. Les fonctions Supabase ne se mettent pas à jour toutes seules quand vous modifiez le code local.
