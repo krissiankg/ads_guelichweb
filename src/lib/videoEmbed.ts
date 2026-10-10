@@ -9,8 +9,8 @@ export function getEmbedSrc(embed: string | null | undefined): string | null {
   if (!embed) return null;
 
   const trimmed = embed.trim();
-  const match = trimmed.match(/<iframe\b[^>]*?\ssrc\s*=\s*(["'])(.*?)\1/i);
-  let candidate = (match ? match[2] : trimmed).replace(/&amp;/g, '&');
+  const match = trimmed.match(/<iframe\b[^>]*?\ssrc\s*=\s*(?:(["'])(.*?)\1|([^\s>]+))/i);
+  let candidate = (match ? (match[2] ?? match[3]) : trimmed).replace(/&amp;/g, '&');
   if (candidate.startsWith('//')) candidate = `https:${candidate}`;
 
   try {

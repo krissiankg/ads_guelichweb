@@ -14,6 +14,12 @@ describe('getEmbedSrc', () => {
             .toBe('https://mega.nz/embed/AbC#key');
     });
 
+    it('extracts an unquoted src', () => {
+        expect(getEmbedSrc('<iframe src=https://player.vimeo.com/video/42 allowfullscreen></iframe>'))
+            .toBe('https://player.vimeo.com/video/42');
+        expect(getEmbedSrc('<iframe src=javascript:alert(1)></iframe>')).toBeNull();
+    });
+
     it('accepts a plain https URL and protocol-relative src', () => {
         expect(getEmbedSrc('  https://player.vimeo.com/video/42  ')).toBe('https://player.vimeo.com/video/42');
         expect(getEmbedSrc('<iframe src="//www.youtube.com/embed/abc"></iframe>')).toBe('https://www.youtube.com/embed/abc');

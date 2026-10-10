@@ -1,5 +1,5 @@
 -- ============================================================================
--- GUELICHWEB - Row Level Security (RLS) Policies
+-- GUELICHWEB - Row Level Security (RLS) Policies and email send markers
 -- Instructions: Copy and paste this code into your Supabase SQL Editor and hit "Run".
 -- The script is safe to re-run.
 --
@@ -108,7 +108,26 @@ CREATE POLICY "Admins have full access to site_settings"
   ON public.site_settings FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- 6. Check: list the policies now in place (shown in the results panel)
+-- 6. Email send markers, used by the Edge Functions so that each confirmation or
+--    welcome email is sent only once (they cannot be replayed to flood an inbox).
+ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS confirmation_sent_at timestamptz;
+ALTER TABLE public.contest_submissions ADD COLUMN IF NOT EXISTS confirmation_sent_at timestamptz;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'newsletter_subscribers'
+      AND column_name = 'welcome_email_sent_at'
+  ) THEN
+    ALTER TABLE public.newsletter_subscribers ADD COLUMN welcome_email_sent_at timestamptz;
+    -- Existing subscribers were already sent their welcome email.
+    UPDATE public.newsletter_subscribers SET welcome_email_sent_at = now();
+  END IF;
+END $$;
+
+-- 7. Check: list the policies now in place (shown in the results panel)
 SELECT tablename, policyname, cmd, roles
 FROM pg_policies
 WHERE schemaname = 'public'

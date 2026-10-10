@@ -32,13 +32,13 @@ interface WelcomeEmailData {
 }
 
 function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: string; html: string; text: string } {
-  const { couponCode, language } = data;
-  // The name is typed by the visitor: escape it so it cannot inject HTML or links into the email.
-  const name = escapeHtml(data.name);
+  // `name` is typed by the visitor: it is HTML-escaped in the HTML part (no injected
+  // markup or links) and kept as typed in the plain-text part.
+  const { name, couponCode, language } = data;
 
   const content = language === 'fr' ? {
     subject: '🎁 Bienvenue chez GUELICHWEB - Votre coupon -10% vous attend !',
-    greeting: `Bonjour ${name || 'cher(e) abonné(e)'} 👋,`,
+    greeting: (displayName: string) => `Bonjour ${displayName || 'cher(e) abonné(e)'} 👋,`,
     thanks: 'Merci de vous être inscrit(e) à la newsletter <strong>GUELICHWEB</strong> !<br>Nous sommes ravis de vous compter parmi nous.',
     giftTitle: '🎁 Voici votre coupon exclusif de -10% sur votre premier projet :',
     codeLabel: 'CODE PROMO :',
@@ -61,7 +61,7 @@ function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: string; htm
     tagline: '🌐 Votre partenaire digital premium'
   } : {
     subject: '🎁 Welcome to GUELICHWEB - Your 10% OFF coupon awaits!',
-    greeting: `Hello ${name || 'valued subscriber'} 👋,`,
+    greeting: (displayName: string) => `Hello ${displayName || 'valued subscriber'} 👋,`,
     thanks: 'Thank you for subscribing to the <strong>GUELICHWEB</strong> newsletter!<br>We\'re delighted to have you with us.',
     giftTitle: '🎁 Here\'s your exclusive 10% OFF coupon for your first project:',
     codeLabel: 'PROMO CODE:',
@@ -127,7 +127,7 @@ function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: string; htm
     </div>
 
     <div class="content">
-      <div class="greeting">${content.greeting}</div>
+      <div class="greeting">${content.greeting(escapeHtml(name))}</div>
       
       <div class="text">
         ${content.thanks}
@@ -184,7 +184,7 @@ function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: string; htm
   `;
 
   const text = `
-${content.greeting}
+${content.greeting(name)}
 
 ${content.thanks.replace(/<\/?strong>/g, '').replace(/<br>/g, '\n')}
 
@@ -272,59 +272,59 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    // Unique email: an address already subscribed gets no second welcome email,
-    // so this endpoint cannot be used to flood someone's inbox.
-    if (insertResponse.status === 409) {
-      return new Response(
-        JSON.stringify({
-          error: language === 'fr'
-            ? 'Cette adresse email est déjà inscrite à la newsletter.'
-            : 'This email address is already subscribed to the newsletter.',
-        }),
-        {
-          status: 409,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-    }
+    const respond = (payload: unknown, status: number) => new Response(
+      JSON.stringify(payload),
+      { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    const alreadySubscribedMessage = language === 'fr'
+      ? 'Cette adresse email est déjà inscrite à la newsletter.'
+      : 'This email address is already subscribed to the newsletter.';
 
-    if (!insertResponse.ok) {
+    // 409 = unique email already in the table
+    const alreadySubscribed = insertResponse.status === 409;
+    if (!alreadySubscribed && !insertResponse.ok) {
       console.error('Database error:', await insertResponse.text());
-      return new Response(
-        JSON.stringify({ error: 'Failed to save subscription' }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      return respond({ error: 'Failed to save subscription' }, 500);
     }
-
-    const [subscriber] = await insertResponse.json();
+    const subscriber = alreadySubscribed ? null : (await insertResponse.json())[0];
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-
     if (!resendApiKey) {
       console.warn('RESEND_API_KEY not configured. Email will not be sent.');
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Subscription saved (email not sent - RESEND_API_KEY not configured)',
-          subscriber,
-        }),
-        {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      return alreadySubscribed
+        ? respond({ error: alreadySubscribedMessage }, 409)
+        : respond({ success: true, message: 'Subscription saved (email not sent - RESEND_API_KEY not configured)', subscriber }, 200);
+    }
+
+    // Claim the welcome email atomically: it is sent only while welcome_email_sent_at
+    // is empty. A repeat subscription gets nothing (this endpoint cannot flood an
+    // inbox), except when the previous welcome email failed to send.
+    const subscriberUrl = `${supabaseUrl}/rest/v1/newsletter_subscribers?email=eq.${encodeURIComponent(email)}`;
+    const dbHeaders = {
+      'Content-Type': 'application/json',
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Prefer': 'return=representation',
+    };
+    const claimResponse = await fetch(`${subscriberUrl}&welcome_email_sent_at=is.null`, {
+      method: 'PATCH',
+      headers: dbHeaders,
+      body: JSON.stringify({ welcome_email_sent_at: new Date().toISOString() }),
+    });
+    let claimed: boolean;
+    if (claimResponse.ok) {
+      claimed = (await claimResponse.json()).length > 0;
+    } else {
+      // welcome_email_sent_at missing (supabase/security_rls_policies.sql not run yet):
+      // only a brand-new subscriber gets the email.
+      console.error('Welcome email claim failed:', await claimResponse.text());
+      claimed = !alreadySubscribed;
+    }
+
+    if (!claimed) {
+      return alreadySubscribed
+        ? respond({ error: alreadySubscribedMessage }, 409)
+        : respond({ success: true, message: 'Subscription successful!', subscriber }, 200);
     }
 
     const emailTemplate = getWelcomeEmailTemplate({
@@ -350,38 +350,23 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error('Resend API error:', errorText);
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Subscription saved but email failed to send',
-          subscriber,
-        }),
-        {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      console.error('Resend API error:', await emailResponse.text());
+      // Release the claim so the next attempt sends the welcome email.
+      if (claimResponse.ok) {
+        await fetch(subscriberUrl, { method: 'PATCH', headers: dbHeaders, body: JSON.stringify({ welcome_email_sent_at: null }) });
+      }
+      return respond({
+        error: language === 'fr'
+          ? 'Inscription enregistrée, mais l\'email de bienvenue n\'a pas pu être envoyé. Réessayez dans quelques minutes.'
+          : 'Subscription saved, but the welcome email could not be sent. Please try again in a few minutes.',
+      }, 502);
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Subscription successful! Check your email for your welcome gift.',
-        subscriber,
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    return respond({
+      success: true,
+      message: 'Subscription successful! Check your email for your welcome gift.',
+      subscriber,
+    }, 200);
   } catch (error) {
     console.error('Error:', error);
     return new Response(

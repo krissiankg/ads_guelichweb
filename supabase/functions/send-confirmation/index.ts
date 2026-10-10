@@ -10,6 +10,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '
 const FROM_EMAIL = 'GUELICHWEB <christ@guelichweb.online>';
 // Only submissions created this recently get a confirmation email (stops replays of old rows).
 const MAX_SUBMISSION_AGE_MS = 10 * 60 * 1000;
+// Tolerated clock difference between the database and this function.
+const CLOCK_SKEW_MS = 60 * 1000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED_TABLES = ['project_submissions', 'contest_submissions'];
 
@@ -44,20 +46,49 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid record id' }), { status: 400, headers: jsonHeaders });
     }
 
-    const lookup = await fetch(
-      `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}&select=*`,
-      { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }
-    );
-    const rows = lookup.ok ? await lookup.json() : [];
-    const record = rows[0];
+    const rowUrl = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`;
+    const dbHeaders = {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'Prefer': 'return=representation',
+    };
+
+    const lookup = await fetch(`${rowUrl}&select=*`, { headers: dbHeaders });
+    if (!lookup.ok) {
+      console.error('Submission lookup failed:', await lookup.text());
+      return new Response(JSON.stringify({ error: 'Failed to load submission' }), { status: 502, headers: jsonHeaders });
+    }
+    const record = (await lookup.json())[0];
 
     if (!record?.email) {
       return new Response(JSON.stringify({ error: 'Submission not found' }), { status: 404, headers: jsonHeaders });
     }
 
+    // created_at can be set by whoever inserts the row: reject future dates too.
     const ageMs = Date.now() - new Date(record.created_at).getTime();
-    if (!(ageMs <= MAX_SUBMISSION_AGE_MS)) {
+    if (!(ageMs >= -CLOCK_SKEW_MS && ageMs <= MAX_SUBMISSION_AGE_MS)) {
       return new Response(JSON.stringify({ error: 'Submission too old' }), { status: 409, headers: jsonHeaders });
+    }
+
+    // Claim the email atomically so each submission gets exactly one confirmation,
+    // however many times this endpoint is called.
+    const claim = await fetch(`${rowUrl}&confirmation_sent_at=is.null`, {
+      method: 'PATCH',
+      headers: dbHeaders,
+      body: JSON.stringify({ confirmation_sent_at: new Date().toISOString() }),
+    });
+    if (claim.ok) {
+      if ((await claim.json()).length === 0) {
+        return new Response(JSON.stringify({ error: 'Confirmation already sent' }), { status: 409, headers: jsonHeaders });
+      }
+    } else if (claim.status === 400) {
+      // confirmation_sent_at missing (supabase/security_rls_policies.sql not run yet):
+      // send anyway, protected only by the age check above.
+      console.error('Confirmation claim failed:', await claim.text());
+    } else {
+      console.error('Confirmation claim failed:', await claim.text());
+      return new Response(JSON.stringify({ error: 'Failed to claim submission' }), { status: 502, headers: jsonHeaders });
     }
 
     const name = escapeHtml(record.name ?? record.full_name);
