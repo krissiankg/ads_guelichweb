@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://thnowfeqcbormjmlfunx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRobm93ZmVxY2Jvcm1qbWxmdW54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNDUxNDgsImV4cCI6MjA4NjcyMTE0OH0.NdnNRgJCtxUMOkwtSqCaGyFzjTmdKtV-klPb3niqcbk';
+// Run with: node --env-file=.env check-database.js
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sont requis (fichier .env)');
+    process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

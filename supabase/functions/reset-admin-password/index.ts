@@ -31,8 +31,10 @@ Deno.serve(async (req: Request) => {
 
     const { email, newPassword, resetToken } = await req.json();
 
-    const validToken = 'guelich-reset-2026';
-    if (resetToken !== validToken) {
+    // The token is a Supabase secret (never hardcode it: the repository is public).
+    // If ADMIN_RESET_TOKEN is not set, the function refuses every request.
+    const validToken = Deno.env.get('ADMIN_RESET_TOKEN');
+    if (!validToken || validToken.length < 32 || resetToken !== validToken) {
       return new Response(
         JSON.stringify({ error: 'Invalid reset token' }),
         {
