@@ -46,7 +46,7 @@ Le site est hébergé sur **Vercel**, qui le met en ligne **automatiquement** :
 2.  Collez tout le contenu de `supabase/security_rls_policies.sql` et cliquez sur **Run**.
 3.  Le tableau affiché à la fin doit montrer **deux règles par table** : une pour le public, une pour les admins.
 
-✅ *Le script peut être relancé sans risque. Faites cette étape **avant** de redéployer les fonctions (étape 2) si les deux ont changé.*
+⚠️ *Le script **remplace toutes les règles** de ces 6 tables : une règle ajoutée à la main dans Supabase sur l'une d'elles serait supprimée. Ajoutez plutôt vos règles dans le script lui-même. Faites cette étape **avant** de redéployer les fonctions (étape 2) si les deux ont changé.*
 
 ---
 
