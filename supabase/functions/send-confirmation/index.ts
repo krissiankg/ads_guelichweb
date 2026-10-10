@@ -5,7 +5,24 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const FROM_EMAIL = 'GUELICHWEB <christ@guelichweb.online>';
+// Only submissions created this recently get a confirmation email (stops replays of old rows).
+const MAX_SUBMISSION_AGE_MS = 10 * 60 * 1000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ALLOWED_TABLES = ['project_submissions', 'contest_submissions'];
+
+const jsonHeaders = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -16,11 +33,40 @@ serve(async (req) => {
   }
 
   try {
-    const { record } = await req.json();
+    // Called by the database webhook on new submissions. The request body is never
+    // trusted: the submission is re-read from the database by its id, so this
+    // endpoint cannot be used to send arbitrary emails from our domain.
+    const payload = await req.json();
+    const id = payload?.record?.id;
+    const table = ALLOWED_TABLES.includes(payload?.table) ? payload.table : 'project_submissions';
+
+    if (typeof id !== 'string' || !UUID_RE.test(id)) {
+      return new Response(JSON.stringify({ error: 'Invalid record id' }), { status: 400, headers: jsonHeaders });
+    }
+
+    const lookup = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}&select=*`,
+      { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }
+    );
+    const rows = lookup.ok ? await lookup.json() : [];
+    const record = rows[0];
 
     if (!record?.email) {
-      return new Response(JSON.stringify({ error: 'No email in record' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Submission not found' }), { status: 404, headers: jsonHeaders });
     }
+
+    const ageMs = Date.now() - new Date(record.created_at).getTime();
+    if (!(ageMs <= MAX_SUBMISSION_AGE_MS)) {
+      return new Response(JSON.stringify({ error: 'Submission too old' }), { status: 409, headers: jsonHeaders });
+    }
+
+    const name = escapeHtml(record.name ?? record.full_name);
+    const projectType = escapeHtml(record.project_type || '—');
+    const budget = escapeHtml(record.budget || '—');
+    const rawDescription = String(record.description ?? record.activity_description ?? '');
+    const description = rawDescription
+      ? escapeHtml(rawDescription.slice(0, 200)) + (rawDescription.length > 200 ? '...' : '')
+      : '—';
 
     const htmlBody = `
       <!DOCTYPE html>
@@ -54,7 +100,7 @@ serve(async (req) => {
           </div>
           
           <div class="content">
-            <div class="greeting">Merci pour votre demande, ${record.name} !</div>
+            <div class="greeting">Merci pour votre demande, ${name} !</div>
             <p class="text">
               Nous avons bien reçu votre demande de projet. Notre équipe va l'analyser et vous recontactera très prochainement pour discuter des détails.
             </p>
@@ -63,16 +109,16 @@ serve(async (req) => {
               <div class="summary-title">Récapitulatif de votre demande</div>
               <div class="summary-row">
                 <span class="summary-label">Type de projet</span>
-                <span class="summary-value">${record.project_type || '—'}</span>
+                <span class="summary-value">${projectType}</span>
               </div>
               <div class="summary-row">
                 <span class="summary-label">Budget estimé</span>
-                <span class="summary-value">${record.budget || '—'}</span>
+                <span class="summary-value">${budget}</span>
               </div>
               <div class="summary-row" style="display: block; padding-top: 16px;">
                 <span class="summary-label" style="display: block; margin-bottom: 8px;">Description</span>
                 <span class="summary-value" style="display: block; text-align: left; color: #475569; font-weight: 400; line-height: 1.5;">
-                  ${(record.description || '—').slice(0, 200)}${record.description && record.description.length > 200 ? '...' : ''}
+                  ${description}
                 </span>
               </div>
             </div>
@@ -103,13 +149,8 @@ serve(async (req) => {
     });
 
     const data = await res.json();
-    return new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
+    return new Response(JSON.stringify(data), { status: res.ok ? 200 : 502, headers: jsonHeaders });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
+    return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500, headers: jsonHeaders });
   }
 });

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ExternalLink, Play, Image as ImageIcon, ChevronLeft, ChevronRight, CheckCircle2, Globe, Palette, Video, Maximize2 } from 'lucide-react';
 import { supabase, PortfolioProject, VideoPortfolio } from '../../lib/supabase';
+import { getEmbedSrc } from '../../lib/videoEmbed';
 import { Language } from '../../translations';
 
 interface PortfolioContentProps {
@@ -402,14 +403,23 @@ function ProjectDetailOverlay({ project, fr, currentImageIndex, setCurrentImageI
 
 // --- Video Player Overlay ---
 function VideoPlayerOverlay({ video, fr, onClose }: { video: VideoPortfolio; fr: boolean; onClose: () => void }) {
+  const embedSrc = getEmbedSrc(video.video_embed);
   return (
     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-3xl z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
       <AnimatedBackground />
       <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
         {/* Video Player Area */}
         <div className="relative bg-black rounded-t-3xl overflow-hidden">
-          {video.video_embed ? (
-            <div className="aspect-video" dangerouslySetInnerHTML={{ __html: video.video_embed }} />
+          {embedSrc ? (
+            <div className="aspect-video">
+              <iframe
+                src={embedSrc}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allowFullScreen
+                title={video.title}
+              />
+            </div>
           ) : video.video_url ? (
             <div className="aspect-video">
               {video.video_url.includes('youtube.com') || video.video_url.includes('youtu.be') ? (

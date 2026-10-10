@@ -6,6 +6,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+const EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface SubscribeRequest {
   name: string;
   email: string;
@@ -21,7 +32,9 @@ interface WelcomeEmailData {
 }
 
 function getWelcomeEmailTemplate(data: WelcomeEmailData): { subject: string; html: string; text: string } {
-  const { name, couponCode, language } = data;
+  const { couponCode, language } = data;
+  // The name is typed by the visitor: escape it so it cannot inject HTML or links into the email.
+  const name = escapeHtml(data.name);
 
   const content = language === 'fr' ? {
     subject: '🎁 Bienvenue chez GUELICHWEB - Votre coupon -10% vous attend !',
@@ -219,11 +232,15 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { name, email, consent, language = 'fr' }: SubscribeRequest = await req.json();
+    const body: Partial<SubscribeRequest> = await req.json();
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const name = typeof body.name === 'string' ? body.name.trim().slice(0, 100) : '';
+    const consent = body.consent === true;
+    const language: 'fr' | 'en' = body.language === 'en' ? 'en' : 'fr';
 
-    if (!email || !consent) {
+    if (!consent || email.length > 254 || !EMAIL_RE.test(email)) {
       return new Response(
-        JSON.stringify({ error: 'Email and consent are required' }),
+        JSON.stringify({ error: 'A valid email and consent are required' }),
         {
           status: 400,
           headers: {
@@ -237,7 +254,7 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    const { data: subscriber, error: dbError } = await fetch(
+    const insertResponse = await fetch(
       `${supabaseUrl}/rest/v1/newsletter_subscribers`,
       {
         method: 'POST',
@@ -248,15 +265,34 @@ Deno.serve(async (req: Request) => {
           'Prefer': 'return=representation'
         },
         body: JSON.stringify({
-          name: name || '',
+          name,
           email,
           consent,
         }),
       }
-    ).then(res => res.json());
+    );
 
-    if (dbError) {
-      console.error('Database error:', dbError);
+    // Unique email: an address already subscribed gets no second welcome email,
+    // so this endpoint cannot be used to flood someone's inbox.
+    if (insertResponse.status === 409) {
+      return new Response(
+        JSON.stringify({
+          error: language === 'fr'
+            ? 'Cette adresse email est déjà inscrite à la newsletter.'
+            : 'This email address is already subscribed to the newsletter.',
+        }),
+        {
+          status: 409,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+
+    if (!insertResponse.ok) {
+      console.error('Database error:', await insertResponse.text());
       return new Response(
         JSON.stringify({ error: 'Failed to save subscription' }),
         {
@@ -268,6 +304,8 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    const [subscriber] = await insertResponse.json();
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
 
