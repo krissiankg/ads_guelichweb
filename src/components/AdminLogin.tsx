@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lock, Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Language } from '../translations';
@@ -6,6 +6,9 @@ import { Language } from '../translations';
 interface AdminLoginProps {
   onLoginSuccess: () => void;
   language: Language;
+  /** Opened from the "reset password" email link: show the new password form */
+  isPasswordRecovery?: boolean;
+  onPasswordUpdated?: () => void;
 }
 
 const RightSidePresentation = ({ language }: { language: Language }) => (
@@ -75,16 +78,20 @@ const RightSidePresentation = ({ language }: { language: Language }) => (
   </div>
 );
 
-export function AdminLogin({ onLoginSuccess, language }: AdminLoginProps) {
+export function AdminLogin({ onLoginSuccess, language, isPasswordRecovery = false, onPasswordUpdated }: AdminLoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(isPasswordRecovery);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    if (isPasswordRecovery) setShowResetPassword(true);
+  }, [isPasswordRecovery]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +144,7 @@ export function AdminLogin({ onLoginSuccess, language }: AdminLoginProps) {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/admin/reset-password`,
+        redirectTo: `${window.location.origin}/admin`,
       });
 
       if (resetError) throw resetError;
@@ -196,6 +203,7 @@ export function AdminLogin({ onLoginSuccess, language }: AdminLoginProps) {
         setShowResetPassword(false);
         setNewPassword('');
         setConfirmPassword('');
+        onPasswordUpdated?.();
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to update password');

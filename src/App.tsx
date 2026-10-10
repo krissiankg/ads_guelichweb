@@ -32,6 +32,8 @@ function App() {
     return path === '/contest' || path === '/contest/';
   });
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  // True when the admin opens the "reset password" link received by email
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => window.location.hash.includes('type=recovery'));
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
@@ -60,7 +62,10 @@ function App() {
       setCheckingAuth(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
       if (!session) {
         setIsAdminAuthenticated(false);
       }
@@ -142,8 +147,18 @@ function App() {
   }
 
   if (isAdminRoute) {
-    if (!isAdminAuthenticated) {
-      return <AdminLogin onLoginSuccess={() => setIsAdminAuthenticated(true)} language={language} />;
+    if (isPasswordRecovery || !isAdminAuthenticated) {
+      return (
+        <AdminLogin
+          onLoginSuccess={() => {
+            setIsPasswordRecovery(false);
+            setIsAdminAuthenticated(true);
+          }}
+          language={language}
+          isPasswordRecovery={isPasswordRecovery}
+          onPasswordUpdated={() => setIsPasswordRecovery(false)}
+        />
+      );
     }
     return <AdminDashboard onLogout={() => setIsAdminAuthenticated(false)} language={language} />;
   }
