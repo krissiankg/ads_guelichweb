@@ -7,9 +7,15 @@ Write-Host "Deploying All Supabase Functions..." -ForegroundColor Cyan
 Write-Host "Checking Supabase login..."
 npx supabase login
 
-# 2. Set Secret (ensure it's set for all functions)
-Write-Host "Setting RESEND_API_KEY secret..."
-npx supabase secrets set RESEND_API_KEY=re_EsSZuouR_KLeHiW8DGwMQjWrhwqCAUGww
+# 2. Set Secrets from the local, git-ignored file supabase/.env (see supabase/.env.example)
+# Never write API keys in this script: the repository is public.
+$secretsFile = Join-Path $PSScriptRoot "supabase/.env"
+if (Test-Path $secretsFile) {
+    Write-Host "Setting secrets from supabase/.env..."
+    npx supabase secrets set --env-file $secretsFile
+} else {
+    Write-Host "supabase/.env not found: secrets not updated (existing Supabase secrets are kept)." -ForegroundColor Yellow
+}
 
 # 3. Deploy send-confirmation (Project Submission Email)
 Write-Host "Deploying send-confirmation..."

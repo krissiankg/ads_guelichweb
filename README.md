@@ -45,6 +45,7 @@ Bienvenue sur le dépôt du projet officiel de **GUELICHWEB**, l'agence web et m
    VITE_SUPABASE_URL=votre_url_supabase
    VITE_SUPABASE_ANON_KEY=votre_cle_publique_supabase
    ```
+   Les secrets des fonctions Supabase (clé Resend…) vont dans `supabase/.env` (voir `supabase/.env.example`). Ces fichiers `.env` sont ignorés par git : ne commitez jamais de clé.
 
 4. **Lancer le serveur de développement**
    ```bash
