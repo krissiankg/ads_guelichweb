@@ -39,26 +39,26 @@ export function CookieBanner({ language, onOpenPolicy, hidden = false }: CookieB
   };
 
   return (
-    <div role="dialog" aria-label={t.label} className="fixed bottom-0 inset-x-0 z-[60] p-4">
-      <div className="max-w-4xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-2xl p-5 flex flex-col md:flex-row md:items-center gap-4">
-        <p className="text-sm text-slate-700 leading-relaxed flex-grow">
+    <div role="dialog" aria-label={t.label} className="fixed bottom-4 left-4 z-[70] w-[calc(100%-6.5rem)] max-w-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 flex flex-col gap-3">
+        <p className="text-sm text-slate-700 leading-relaxed">
           {t.message}{' '}
           <button type="button" onClick={onOpenPolicy} className="text-blue-600 underline underline-offset-2">
             {t.policy}
           </button>
         </p>
-        <div className="flex gap-3 shrink-0">
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={() => choose('denied')}
-            className="px-5 py-2.5 rounded-xl font-bold text-sm bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+            className="flex-1 px-3 py-2 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
           >
             {t.refuse}
           </button>
           <button
             type="button"
             onClick={() => choose('granted')}
-            className="px-5 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            className="flex-1 px-3 py-2 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white transition-colors"
           >
             {t.accept}
           </button>
