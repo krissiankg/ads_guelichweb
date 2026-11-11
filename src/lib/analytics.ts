@@ -5,7 +5,13 @@ const PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string | undefined;
 const GA_ID = import.meta.env.VITE_GA_ID as string | undefined;
 
 type Tracker = (...args: unknown[]) => void;
-type FbqStub = Tracker & { queue: unknown[][]; loaded: boolean; version: string };
+type FbqStub = Tracker & {
+  queue: unknown[][];
+  loaded: boolean;
+  version: string;
+  push: Tracker;
+  callMethod?: Tracker;
+};
 
 declare global {
   interface Window {
@@ -34,8 +40,13 @@ export function initAnalytics() {
   if (!PIXEL_ID && !GA_ID) return;
 
   if (PIXEL_ID) {
-    // Queue calls until Meta's script has loaded.
-    const fbq = ((...args: unknown[]) => { fbq.queue.push(args); }) as FbqStub;
+    // Same contract as Meta's official snippet: queue calls until fbevents.js
+    // has loaded, then hand them to the `callMethod` it installs.
+    const fbq = ((...args: unknown[]) => {
+      if (fbq.callMethod) fbq.callMethod(...args);
+      else fbq.queue.push(args);
+    }) as FbqStub;
+    fbq.push = fbq;
     fbq.queue = [];
     fbq.loaded = true;
     fbq.version = '2.0';
