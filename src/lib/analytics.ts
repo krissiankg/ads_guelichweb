@@ -34,10 +34,45 @@ function track(metaEvent: string, gaEvent: string, params: Record<string, unknow
   window.gtag?.('event', gaEvent, params);
 }
 
-/** Call once at startup. The admin area is never tracked. */
+const CONSENT_KEY = 'gw-cookie-consent';
+
+export type Consent = 'granted' | 'denied' | 'unset';
+
+/** True when at least one tracker is configured, outside the admin area. */
+export function hasTracking() {
+  return Boolean(PIXEL_ID || GA_ID) && !window.location.pathname.startsWith('/admin');
+}
+
+export function getConsent(): Consent {
+  try {
+    const stored = window.localStorage.getItem(CONSENT_KEY);
+    return stored === 'granted' || stored === 'denied' ? stored : 'unset';
+  } catch {
+    // Storage unavailable (private mode): ask again on each visit.
+    return 'unset';
+  }
+}
+
+/** Save the visitor's choice and start tracking if they accepted. */
+export function setConsent(value: 'granted' | 'denied') {
+  try {
+    window.localStorage.setItem(CONSENT_KEY, value);
+  } catch {
+    // Keep the choice for this page view only.
+  }
+  if (value === 'granted') startTracking();
+}
+
+/** Call once at startup: trackers load only for visitors who already accepted. */
 export function initAnalytics() {
-  if (window.location.pathname.startsWith('/admin')) return;
-  if (!PIXEL_ID && !GA_ID) return;
+  if (hasTracking() && getConsent() === 'granted') startTracking();
+}
+
+let started = false;
+
+function startTracking() {
+  if (started || !hasTracking()) return;
+  started = true;
 
   if (PIXEL_ID) {
     // Same contract as Meta's official snippet: queue calls until fbevents.js
