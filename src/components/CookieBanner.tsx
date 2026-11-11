@@ -39,7 +39,7 @@ export function CookieBanner({ language, onOpenPolicy, hidden = false }: CookieB
   };
 
   return (
-    <div role="dialog" aria-label={t.label} className="fixed bottom-4 left-4 z-[70] w-[calc(100%-6.5rem)] max-w-sm">
+    <div role="dialog" aria-label={t.label} className="fixed bottom-4 left-4 z-[55] w-[calc(100%-6.5rem)] max-w-sm">
       <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 flex flex-col gap-3">
         <p className="text-sm text-slate-700 leading-relaxed">
           {t.message}{' '}
