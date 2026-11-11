@@ -209,7 +209,7 @@ function App() {
 
       <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15860.038706346766!2d2.3451554999999997!3d6.393438450000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1023559312c9c729%3A0xc3995878864f1642!2sPharmacie%20Aitchedji!5e0!3m2!1sfr!2sbj!4v1709494444444!5m2!1sfr!2sbj" width="100%" height="300" style={{ border: 0 }} allowFullScreen loading="lazy"></iframe>
 
-      <CookieBanner language={language} onOpenPolicy={() => setShowPrivacyModal(true)} />
+      <CookieBanner language={language} hidden={showPrivacyModal} onOpenPolicy={() => setShowPrivacyModal(true)} />
 
       {/* Modals */}
       {showPrivacyModal && (

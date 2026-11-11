@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Language } from '../translations';
-import { getConsent, hasTracking, setConsent } from '../lib/analytics';
+import { getConsent, hasTracking, onReopenConsent, setConsent } from '../lib/analytics';
 
 const TEXT = {
   fr: {
-    message: 'Nous utilisons des cookies de mesure d’audience (Meta, Google Analytics) pour améliorer ce site. Vous pouvez les accepter ou les refuser.',
+    message: 'Nous utilisons des cookies de mesure d’audience pour améliorer ce site. Vous pouvez les accepter ou les refuser.',
     policy: 'Politique de confidentialité',
     accept: 'Accepter',
     refuse: 'Refuser',
     label: 'Consentement aux cookies',
   },
   en: {
-    message: 'We use audience measurement cookies (Meta, Google Analytics) to improve this site. You can accept or refuse them.',
+    message: 'We use audience measurement cookies to improve this site. You can accept or refuse them.',
     policy: 'Privacy policy',
     accept: 'Accept',
     refuse: 'Refuse',
@@ -22,12 +22,15 @@ const TEXT = {
 interface CookieBannerProps {
   language: Language;
   onOpenPolicy: () => void;
+  /** Hide the banner while another dialog (the privacy policy) is open. */
+  hidden?: boolean;
 }
 
 /** Shown only when a tracker is configured and the visitor has not chosen yet. */
-export function CookieBanner({ language, onOpenPolicy }: CookieBannerProps) {
+export function CookieBanner({ language, onOpenPolicy, hidden = false }: CookieBannerProps) {
   const [visible, setVisible] = useState(() => hasTracking() && getConsent() === 'unset');
-  if (!visible) return null;
+  useEffect(() => onReopenConsent(() => setVisible(hasTracking())), []);
+  if (!visible || hidden) return null;
 
   const t = TEXT[language];
   const choose = (value: 'granted' | 'denied') => {

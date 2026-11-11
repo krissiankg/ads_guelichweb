@@ -35,6 +35,7 @@ function track(metaEvent: string, gaEvent: string, params: Record<string, unknow
 }
 
 const CONSENT_KEY = 'gw-cookie-consent';
+let started = false;
 
 export type Consent = 'granted' | 'denied' | 'unset';
 
@@ -61,14 +62,26 @@ export function setConsent(value: 'granted' | 'denied') {
     // Keep the choice for this page view only.
   }
   if (value === 'granted') startTracking();
+  // Trackers already running on this page can only be stopped by a reload.
+  else if (started) window.location.reload();
+}
+
+const REOPEN_EVENT = 'gw-cookie-consent-reopen';
+
+/** Show the banner again so the visitor can change their choice. */
+export function reopenConsent() {
+  window.dispatchEvent(new Event(REOPEN_EVENT));
+}
+
+export function onReopenConsent(listener: () => void) {
+  window.addEventListener(REOPEN_EVENT, listener);
+  return () => window.removeEventListener(REOPEN_EVENT, listener);
 }
 
 /** Call once at startup: trackers load only for visitors who already accepted. */
 export function initAnalytics() {
   if (hasTracking() && getConsent() === 'granted') startTracking();
 }
-
-let started = false;
 
 function startTracking() {
   if (started || !hasTracking()) return;

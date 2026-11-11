@@ -1,4 +1,5 @@
 import { Phone, Mail, MapPin, Clock, Lock } from 'lucide-react';
+import { hasTracking, reopenConsent } from '../../lib/analytics';
 
 interface FooterProps {
   t: any;
@@ -121,6 +122,16 @@ export function Footer({ t, setShowPrivacyModal }: FooterProps) {
                     {t.footer.privacy}
                   </button>
                 </li>
+                {hasTracking() && (
+                  <li>
+                    <button
+                      onClick={reopenConsent}
+                      className="text-slate-400 hover:text-white transition-colors text-sm"
+                    >
+                      {t.footer.cookies}
+                    </button>
+                  </li>
+                )}
                 <li>
                   <a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">
                     {t.footer.terms}
