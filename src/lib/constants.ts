@@ -38,3 +38,8 @@ export const benefits = [
     gradient: 'from-orange-500 to-amber-400',
   },
 ];
+
+export const WHATSAPP_URL = 'https://wa.me/2290166368705';
+
+export const whatsappLink = (message?: string) =>
+  message ? `${WHATSAPP_URL}?text=${encodeURIComponent(message)}` : WHATSAPP_URL;

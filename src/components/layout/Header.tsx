@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Menu, X, Sparkles } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Language } from '../../translations';
 
 interface HeaderProps {
   language: Language;
   setLanguage: (lang: Language) => void;
   setIsAdminRoute: (val: boolean) => void;
-  setIsContestRoute: (val: boolean) => void;
   t: any;
 }
 
@@ -14,7 +13,6 @@ export function Header({
   language,
   setLanguage,
   setIsAdminRoute,
-  setIsContestRoute,
   t
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -27,7 +25,6 @@ export function Header({
             <button 
               onClick={() => {
                 setIsAdminRoute(false);
-                setIsContestRoute(false);
                 window.history.pushState({}, '', '/');
               }}
               className="flex items-center"
@@ -62,17 +59,6 @@ export function Header({
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            <button
-              onClick={() => {
-                setIsContestRoute(true);
-                window.history.pushState({}, '', '/contest');
-              }}
-              className="relative group overflow-hidden bg-white border-2 border-amber-500 text-amber-600 px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 hover:bg-amber-50 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center space-x-2"
-            >
-              <Sparkles size={18} className="text-amber-500 animate-pulse" />
-              <span>{t.contest.navButton}</span>
-            </button>
-
             <a
               href="#portfolio"
               className="text-slate-700 hover:text-blue-600 font-medium transition-all duration-300 px-4 py-2 rounded-xl hover:bg-slate-100 flex items-center space-x-2"
@@ -121,7 +107,6 @@ export function Header({
             <button
               onClick={() => {
                 setIsAdminRoute(false);
-                setIsContestRoute(false);
                 setMobileMenuOpen(false);
                 window.history.pushState({}, '', '/');
               }}
@@ -129,19 +114,6 @@ export function Header({
             >
               {t.header.home}
             </button>
-            <button
-              onClick={() => {
-                setIsContestRoute(true);
-                setMobileMenuOpen(false);
-                window.history.pushState({}, '', '/contest');
-              }}
-              className="flex items-center space-x-2 w-full text-amber-600 font-bold px-2 py-3 bg-amber-50 rounded-xl border border-amber-200 shadow-sm shadow-amber-500/10"
-            >
-              <Sparkles size={18} className="text-amber-500 animate-pulse" />
-              <span>{t.contest.navButton}</span>
-            </button>
-
-
               <a
                 href="#portfolio"
                 onClick={() => setMobileMenuOpen(false)}

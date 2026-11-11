@@ -1,17 +1,19 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { X, Gift } from 'lucide-react';
+import { X } from 'lucide-react';
 import { getTranslation, Language } from './translations';
 
 import { ConfirmModal } from './components/ConfirmModal';
-import { ContestPage } from './components/ContestPage';
 import { supabase } from './lib/supabase';
+import { trackLead } from './lib/analytics';
+import { whatsappLink } from './lib/constants';
 import { Toaster, toast } from 'react-hot-toast';
 
 // Layout & Sections
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { HeroSection } from './components/sections/HeroSection';
-import { ServicesSection } from './components/sections/ServicesSection';
+import { CookieBanner } from './components/CookieBanner';
+import { PricingSection } from './components/sections/PricingSection';
 import { PortfolioSection } from './components/sections/PortfolioSection';
 import { ProjectFormSection } from './components/sections/ProjectFormSection';
 import { NewsletterSection } from './components/sections/NewsletterSection';
@@ -24,15 +26,10 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard').then((m)
 
 function App() {
   const [language, setLanguage] = useState<Language>('fr');
-  const [selectedService, setSelectedService] = useState('');
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [isAdminRoute, setIsAdminRoute] = useState(() => {
     const path = window.location.pathname;
     return path === '/admin' || path === '/admin/';
-  });
-  const [isContestRoute, setIsContestRoute] = useState(() => {
-    const path = window.location.pathname;
-    return path === '/contest' || path === '/contest/';
   });
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   // True when the admin opens the "reset password" link received by email
@@ -44,8 +41,9 @@ function App() {
     if (path === '/admin' || path === '/admin/') {
       setIsAdminRoute(true);
     }
+    // The contest is closed: old /contest links land on the home page.
     if (path === '/contest' || path === '/contest/') {
-      setIsContestRoute(true);
+      window.history.replaceState({}, '', '/');
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -81,7 +79,7 @@ function App() {
   useEffect(() => {
     document.title = isAdminRoute && isAdminAuthenticated
       ? 'Admin — GUELICHWEB'
-      : 'GUELICHWEB — Agence Web, Design & Vidéo';
+      : 'GUELICHWEB — Site professionnel à partir de 125 000 FCFA';
   }, [isAdminRoute, isAdminAuthenticated]);
 
   const t = getTranslation(language);
@@ -123,18 +121,13 @@ function App() {
         }]);
 
       if (error) throw error;
+      trackLead();
       toast.success(t.projectForm.successMessage, { duration: 5000 });
       setFormData({ name: '', email: '', phone: '+229', projectType: '', budget: '', description: '', consent: false });
     } catch (error) {
       console.error('Error submitting form:', error);
       toast.error('Une erreur est survenue lors de l\'envoi du formulaire. Veuillez réessayer.', { duration: 5000 });
     }
-  };
-
-  const handleServiceSelect = (serviceId: string, serviceLabel: string) => {
-    setSelectedService(serviceId);
-    setFormData({ ...formData, projectType: serviceLabel });
-    document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const adminLoader = (
@@ -177,64 +170,28 @@ function App() {
         language={language}
         setLanguage={setLanguage}
         setIsAdminRoute={setIsAdminRoute}
-        setIsContestRoute={setIsContestRoute}
         t={t}
       />
 
       <main className="pt-20">
-        {isContestRoute ? (
-          <ContestPage 
-            language={language} 
-            onClose={() => {
-              setIsContestRoute(false);
-              window.history.pushState({}, '', '/');
-            }} 
-          />
-        ) : (
-          <>
-            <HeroSection t={t} />
-            <ServicesSection t={t} selectedService={selectedService} onSelect={handleServiceSelect} />
-            <ProjectFormSection 
-              t={t} 
-              formData={formData} 
-              setFormData={setFormData} 
-              handleFormSubmit={handleFormSubmit} 
-              setShowPrivacyModal={setShowPrivacyModal} 
-            />
-            <PortfolioSection t={t} language={language} />
-            <NewsletterSection t={t} language={language} />
-            <ContactSection t={t} />
-          </>
-        )}
+        <HeroSection t={t} />
+        <PricingSection t={t} />
+        <ProjectFormSection
+          t={t}
+          formData={formData}
+          setFormData={setFormData}
+          handleFormSubmit={handleFormSubmit}
+          setShowPrivacyModal={setShowPrivacyModal}
+        />
+        <PortfolioSection t={t} language={language} />
+        <NewsletterSection t={t} language={language} />
+        <ContactSection t={t} />
       </main>
 
-      {!isContestRoute && (
-        <Footer t={t} setShowPrivacyModal={setShowPrivacyModal} />
-      )}
-
-      {/* Floating Contest Badge */}
-      {!isAdminRoute && !isContestRoute && (
-        <button
-          onClick={() => setIsContestRoute(true)}
-          className="fixed bottom-6 left-6 z-50 group flex items-center"
-        >
-          <div className="relative">
-            <div className="absolute inset-0 bg-amber-400 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300 animate-pulse"></div>
-            <div className="relative bg-gradient-to-br from-amber-400 to-orange-500 text-white p-4 rounded-full shadow-2xl shadow-amber-500/40 hover:shadow-orange-500/60 transition-all duration-300 transform group-hover:scale-110 group-hover:rotate-12">
-              <Gift className="w-7 h-7" />
-            </div>
-          </div>
-          <div className="bg-white/95 backdrop-blur-sm border border-amber-100 px-5 py-3 rounded-2xl shadow-2xl ml-4 transform transition-all duration-300 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 pointer-events-none">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
-            <p className="text-amber-900 font-extrabold text-sm whitespace-nowrap tracking-wide">
-              {t.contest.floatingBadge}
-            </p>
-          </div>
-        </button>
-      )}
+      <Footer t={t} setShowPrivacyModal={setShowPrivacyModal} />
 
       <a
-        href="https://wa.me/2290166368705"
+        href={whatsappLink()}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 group"
@@ -250,9 +207,9 @@ function App() {
         </div>
       </a>
 
-      {!isContestRoute && (
-        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15860.038706346766!2d2.3451554999999997!3d6.393438450000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1023559312c9c729%3A0xc3995878864f1642!2sPharmacie%20Aitchedji!5e0!3m2!1sfr!2sbj!4v1709494444444!5m2!1sfr!2sbj" width="100%" height="300" style={{ border: 0 }} allowFullScreen loading="lazy"></iframe>
-      )}
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15860.038706346766!2d2.3451554999999997!3d6.393438450000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1023559312c9c729%3A0xc3995878864f1642!2sPharmacie%20Aitchedji!5e0!3m2!1sfr!2sbj!4v1709494444444!5m2!1sfr!2sbj" width="100%" height="300" style={{ border: 0 }} allowFullScreen loading="lazy"></iframe>
+
+      <CookieBanner language={language} hidden={showPrivacyModal} onOpenPolicy={() => setShowPrivacyModal(true)} />
 
       {/* Modals */}
       {showPrivacyModal && (

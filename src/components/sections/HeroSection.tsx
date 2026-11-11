@@ -1,4 +1,5 @@
-import { Sparkles } from 'lucide-react';
+import { Sparkles, MessageCircle } from 'lucide-react';
+import { whatsappLink } from '../../lib/constants';
 
 interface HeroSectionProps {
   t: any;
@@ -19,23 +20,26 @@ export function HeroSection({ t }: HeroSectionProps) {
           <span className="text-sm font-medium text-white/90">{t.hero.badge}</span>
         </div>
 
-        <h2 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight">
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
           {t.hero.title1} <span className="bg-gradient-to-r from-cyan-300 via-blue-200 to-cyan-300 bg-clip-text text-transparent">{t.hero.titleHighlight1}</span> {t.hero.title2}<br />
           <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 bg-clip-text text-transparent">{t.hero.titleHighlight2}</span>
-        </h2>
+        </h1>
         <p className="text-xl md:text-2xl mb-12 text-blue-100 max-w-3xl mx-auto font-light">
           {t.hero.subtitle}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-          <button
-            onClick={() => document.getElementById('project-form')?.scrollIntoView({ behavior: 'smooth' })}
-            className="group relative bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
+          <a
+            href={whatsappLink(t.pricing.heroMessage)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#25D366] hover:bg-[#128C7E] text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
           >
-            <span className="relative z-10">{t.hero.cta1}</span>
-          </button>
+            <MessageCircle size={22} />
+            <span>{t.hero.cta1}</span>
+          </a>
           <button
-            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => document.getElementById('tarifs')?.scrollIntoView({ behavior: 'smooth' })}
             className="relative bg-white/5 backdrop-blur-md border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-all duration-300"
           >
             {t.hero.cta2}
